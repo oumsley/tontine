@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BingMoney — Prototype UX/UI de référence</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --accent:#6D28D9; --accent-dark:#4C1D95; --accent-tint:#F4EEFC;
+    --ink:#181121; --ink-soft:#6E6779; --ink-faint:#A7A0B3;
+    --surface:#FFFFFF; --bg:#FBFAFD; --border:#EDE9F5;
+    --success:#0E9F6E; --success-tint:#E7F8F1;
+    --danger:#E23D5B; --danger-tint:#FDEAEE;
+    --radius-xl:28px; --radius-lg:22px; --radius-md:16px;
+    --shadow-card:0 1px 2px rgba(24,17,33,0.04), 0 8px 24px rgba(24,17,33,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#F1EEF7;color:var(--ink);-webkit-font-smoothing:antialiased;padding:40px 24px;}
+  button{font-family:inherit;cursor:default;border:none;background:none;}
+  h1{font-size:20px;font-weight:800;margin:0 0 4px;}
+  p.lede{font-size:13.5px;color:var(--ink-soft);margin:0 0 28px;max-width:640px;line-height:1.5;}
+  .gallery{display:flex;gap:32px;overflow-x:auto;padding-bottom:24px;}
+  .frame-col{display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
+  .frame-label{font-size:13px;font-weight:700;color:var(--ink);}
+  .frame{width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 40px rgba(24,17,33,0.16);border:1px solid var(--border);}
+  .screen{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;}
+  .scroll{padding:56px 20px 24px;display:flex;flex-direction:column;gap:22px;height:100%;overflow-y:auto;}
+  /* header row */
+  .header-row{display:flex;justify-content:space-between;align-items:flex-start;}
+  .greeting-sub{font-size:13px;color:var(--ink-soft);font-weight:500;}
+  .greeting-name{font-size:19px;font-weight:700;color:var(--ink);margin-top:2px;}
+  .icon-btn{width:44px;height:44px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;color:var(--ink);flex-shrink:0;}
+  .icon-btn svg{width:20px;height:20px;}
+  .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--danger);border:1.5px solid var(--surface);}
+  /* balance / focal cards */
+  .balance-card,.focal-card,.gauge-card{background:var(--accent-dark);border-radius:var(--radius-xl);padding:24px;color:#fff;box-shadow:0 14px 30px rgba(76,29,149,0.28);}
+  .balance-label,.focal-label{font-size:13px;font-weight:500;color:rgba(255,255,255,0.72);margin-bottom:6px;}
+  .balance-amount,.focal-amount{font-size:34px;font-weight:800;letter-spacing:-0.5px;display:flex;align-items:baseline;gap:6px;}
+  .balance-amount .fcfa{font-size:14px;font-weight:600;color:rgba(255,255,255,0.75);}
+  .focal-freq{font-size:14px;color:rgba(255,255,255,0.75);font-weight:600;margin-top:2px;}
+  .balance-actions{display:flex;gap:12px;margin-top:20px;}
+  .pill-action{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:16px;font-size:15px;font-weight:600;}
+  .pill-action.primary{background:#fff;color:var(--accent-dark);}
+  .pill-action.secondary{background:rgba(255,255,255,0.14);color:#fff;border:1px solid rgba(255,255,255,0.28);}
+  .pill-action svg{width:20px;height:20px;}
+  /* sections */
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;}
+  .section-title{font-size:17px;font-weight:700;}
+  .section-link{font-size:13px;font-weight:600;color:var(--accent);}
+  .tontine-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:14px;}
+  .tontine-top{display:flex;justify-content:space-between;align-items:center;}
+  .tontine-badge{background:var(--accent-tint);color:var(--accent-dark);font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;}
+  .tontine-status{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;}
+  .tontine-status.ontrack{background:var(--success-tint);color:var(--success);}
+  .tontine-name{font-size:16px;font-weight:700;color:var(--ink);}
+  .tontine-meta-row{display:flex;justify-content:space-between;gap:8px;}
+  .meta{display:flex;flex-direction:column;gap:4px;}
+  .meta-label{font-size:11px;color:var(--ink-soft);font-weight:500;}
+  .meta-value{font-size:14px;font-weight:700;color:var(--ink);}
+  .progress-track,.dim-track{height:6px;border-radius:999px;background:var(--accent-tint);overflow:hidden;}
+  .progress-fill,.dim-fill{height:100%;background:var(--accent);border-radius:999px;}
+  .trust-shortcut{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow-card);width:100%;}
+  .trust-left{display:flex;align-items:center;gap:14px;}
+  .trust-ring,.info-icon,.dim-icon,.theme-icon{border-radius:14px;background:var(--accent-tint);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .trust-ring{width:44px;height:44px;}
+  .trust-ring svg{width:22px;height:22px;}
+  .trust-title{font-size:14px;font-weight:700;color:var(--ink);}
+  .trust-sub{font-size:12.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;}
+  .trust-chevron{width:20px;height:20px;color:var(--ink-faint);flex-shrink:0;}
+  /* nav */
+  .bottom-nav{position:absolute;left:0;right:0;bottom:0;height:76px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:8px;}
+  .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint);min-width:48px;min-height:48px;justify-content:center;}
+  .nav-item svg{width:23px;height:23px;}
+  .nav-item.active{color:var(--accent);}
+  .nav-label{font-size:11px;font-weight:600;}
+  .spacer{height:72px;flex-shrink:0;}
+  /* wallet quick grid */
+  .quick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .quick-item{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:48px;}
+  .quick-icon{width:52px;height:52px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent-dark);box-shadow:var(--shadow-card);}
+  .quick-icon svg{width:22px;height:22px;}
+  .quick-label{font-size:11px;font-weight:600;color:var(--ink-soft);text-align:center;line-height:1.2;}
+  .tx-list{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-card);}
+  .tx-group-label{font-size:12px;font-weight:700;color:var(--ink-faint);padding:14px 18px 4px;}
+  .tx-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);}
+  .tx-row:last-child{border-bottom:none;}
+  .tx-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .tx-icon.in{background:var(--success-tint);color:var(--success);}
+  .tx-icon.out{background:var(--accent-tint);color:var(--accent-dark);}
+  .tx-icon svg{width:19px;height:19px;}
+  .tx-info{flex:1;min-width:0;}
+  .tx-name{font-size:14px;font-weight:600;color:var(--ink);}
+  .tx-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .tx-amount{font-size:14px;font-weight:700;white-space:nowrap;}
+  .tx-amount.in{color:var(--success);}
+  .tx-amount.out{color:var(--ink);}
+  .page-title{font-size:22px;font-weight:800;}
+  /* fiche produit */
+  .back-btn{width:44px;height:44px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink);}
+  .back-btn svg{width:20px;height:20px;}
+  .hero{background:linear-gradient(180deg, var(--accent-tint), var(--surface));border-radius:var(--radius-xl);padding:24px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;border:1px solid var(--border);}
+  .theme-icon{width:52px;height:52px;background:var(--accent-dark);color:#fff;}
+  .theme-icon svg{width:26px;height:26px;}
+  .theme-tag{font-size:12px;font-weight:700;color:var(--accent-dark);background:rgba(255,255,255,0.7);padding:5px 10px;border-radius:999px;}
+  .product-title{font-size:21px;font-weight:800;line-height:1.25;}
+  .product-sub{font-size:13.5px;color:var(--ink-soft);font-weight:500;}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-card);}
+  .info-icon{width:32px;height:32px;border-radius:10px;margin-bottom:10px;}
+  .info-icon svg{width:16px;height:16px;}
+  .info-label{font-size:11.5px;color:var(--ink-soft);font-weight:500;}
+  .info-value{font-size:15.5px;font-weight:700;margin-top:3px;}
+  .desc-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-card);}
+  .desc-title{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .desc-text{font-size:13.5px;color:var(--ink-soft);line-height:1.55;}
+  .bottom-bar{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:16px 20px 22px;}
+  .cta-primary{width:100%;height:56px;border-radius:18px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .bottom-note{text-align:center;font-size:12px;color:var(--ink-faint);margin-top:8px;font-weight:500;}
+  .scroll.fiche{padding-bottom:170px;}
+  /* security auth */
+  .sec-screen{display:flex;flex-direction:column;background:var(--surface);}
+  .top-bar{padding:56px 20px 0;display:flex;justify-content:flex-end;}
+  .close-btn{width:40px;height:40px;border-radius:12px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
+  .close-btn svg{width:18px;height:18px;}
+  .sec-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 28px 0;text-align:center;}
+  .lock-badge{width:64px;height:64px;border-radius:20px;background:var(--accent-tint);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+  .lock-badge svg{width:30px;height:30px;}
+  .auth-title{font-size:15px;color:var(--ink-soft);font-weight:600;}
+  .auth-amount{font-size:36px;font-weight:800;letter-spacing:-0.5px;margin-top:8px;}
+  .auth-target{font-size:14px;color:var(--ink-soft);font-weight:500;margin-top:6px;}
+  .pin-dots{display:flex;gap:16px;margin:32px 0 28px;}
+  .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);}
+  .pin-dot.filled{background:var(--accent);}
+  .biometric-hint{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--accent-dark);background:var(--accent-tint);padding:10px 16px;border-radius:999px;}
+  .biometric-hint svg{width:18px;height:18px;}
+  .keypad{width:100%;max-width:300px;margin:0 auto;padding:8px 0 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center;}
+  .key{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;color:var(--ink);}
+  .key.action{color:var(--ink-soft);}
+  .key.action svg{width:22px;height:22px;}
+  /* trust score */
+  .top-row{display:flex;align-items:center;gap:14px;}
+  .gauge-card{padding:28px 24px 24px;align-items:center;display:flex;flex-direction:column;}
+  .gauge-num{font-size:52px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;}
+  .gauge-max{font-size:15px;color:rgba(255,255,255,0.65);font-weight:600;margin-top:4px;}
+  .gauge-pill{margin-top:14px;background:rgba(255,255,255,0.16);color:#fff;font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:999px;}
+  .dim-list{display:flex;flex-direction:column;gap:12px;}
+  .dim-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:10px;}
+  .dim-top{display:flex;align-items:center;gap:12px;}
+  .dim-icon{width:36px;height:36px;border-radius:11px;}
+  .dim-icon svg{width:18px;height:18px;}
+  .dim-name{font-size:14px;font-weight:700;flex:1;}
+  .dim-score{font-size:13.5px;font-weight:700;color:var(--ink-soft);}
+  .tips{display:flex;flex-direction:column;gap:10px;}
+  .tip-card{display:flex;align-items:flex-start;gap:12px;background:var(--success-tint);border-radius:var(--radius-md);padding:14px 16px;}
+  .tip-icon{width:28px;height:28px;border-radius:9px;background:var(--surface);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .tip-icon svg{width:15px;height:15px;}
+  .tip-text{font-size:13px;color:var(--ink);font-weight:500;line-height:1.45;}
+  .tip-text b{font-weight:700;color:var(--success);}
+</style>
+</head>
+<body>
+
+<h1>BingMoney — Prototype UX/UI de référence</h1>
+<p class="lede">Direction visuelle imposée pour toute l'implémentation mobile : violet #6D28D9 / #4C1D95, Inter, un seul geste par écran, montant toujours au premier plan. Fichier statique servant de base — étendre cette grammaire aux nouveaux écrans (catalogue, KYC, etc.) plutôt que d'en inventer une autre.</p>
+
+<div class="gallery">
+
+  <div class="frame-col">
+    <div class="frame-label">1. Accueil</div>
+    <div class="frame"><div class="screen">
+      <div class="scroll">
+        <div class="header-row">
+          <div><div class="greeting-sub">Bonjour</div><div class="greeting-name">Aïcha Diallo</div></div>
+          <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+        </div>
+        <div class="balance-card">
+          <div class="balance-label">Solde disponible</div>
+          <div class="balance-amount">45 000 <span class="fcfa">FCFA</span></div>
+          <div class="balance-actions">
+            <button class="pill-action primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M20 8V6a2 2 0 0 0-2-2h-2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Scanner</button>
+            <button class="pill-action secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>Transférer</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-head"><span class="section-title">Mes tontines</span><span class="section-link">Voir tout</span></div>
+          <div class="tontine-card" style="margin-top:12px">
+            <div class="tontine-top"><span class="tontine-badge">Rentrée scolaire</span><span class="tontine-status ontrack">À jour</span></div>
+            <div class="tontine-name">Tontine Rentrée Scolaire · Groupe B</div>
+            <div class="tontine-meta-row">
+              <div class="meta"><div class="meta-label">Tour actuel</div><div class="meta-value">4 / 10</div></div>
+              <div class="meta"><div class="meta-label">Prochaine échéance</div><div class="meta-value">18 sept.</div></div>
+              <div class="meta"><div class="meta-label">Cotisation</div><div class="meta-value">10 000 F</div></div>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:40%"></div></div>
+          </div>
+        </div>
+        <button class="trust-shortcut">
+          <div class="trust-left"><div class="trust-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div>
+            <div><div class="trust-title">Trust Score</div><div class="trust-sub">78 / 100 · Bon niveau</div></div>
+          </div>
+          <svg class="trust-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+        <div class="spacer"></div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/></svg><span class="nav-label">Accueil</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="nav-label">Catalogue</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 9h18"/><circle cx="16" cy="14" r="1.1" fill="currentColor" stroke="none"/></svg><span class="nav-label">Wallet</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg><span class="nav-label">Trust</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-3.5 4-5.5 7-5.5s6 2 7 5.5"/></svg><span class="nav-label">Profil</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="frame-col">
+    <div class="frame-label">2. Wallet</div>
+    <div class="frame"><div class="screen">
+      <div class="scroll">
+        <div class="page-title">Wallet</div>
+        <div class="balance-card"><div class="balance-label">Solde disponible</div><div class="balance-amount">45 000 <span class="fcfa">FCFA</span></div></div>
+        <div class="quick-grid">
+          <div class="quick-item"><div class="quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div class="quick-label">Recharger</div></div>
+          <div class="quick-item"><div class="quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg></div><div class="quick-label">Transférer</div></div>
+          <div class="quick-item"><div class="quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M20 8V6a2 2 0 0 0-2-2h-2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg></div><div class="quick-label">Scanner</div></div>
+          <div class="quick-item"><div class="quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="9 13 12 16 15 13"/></svg></div><div class="quick-label">Retrait</div></div>
+          <div class="quick-item"><div class="quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg></div><div class="quick-label">Crédit &amp; data</div></div>
+        </div>
+        <div class="section-title">Historique</div>
+        <div class="tx-list">
+          <div class="tx-group-label">Aujourd'hui</div>
+          <div class="tx-row"><div class="tx-icon out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div><div class="tx-info"><div class="tx-name">Cotisation · Rentrée Scolaire</div><div class="tx-sub">Aujourd'hui, 09:14</div></div><div class="tx-amount out">− 10 000 F</div></div>
+          <div class="tx-row"><div class="tx-icon out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M20 8V6a2 2 0 0 0-2-2h-2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg></div><div class="tx-info"><div class="tx-name">Paiement · Boutique Kady</div><div class="tx-sub">Aujourd'hui, 08:02</div></div><div class="tx-amount out">− 2 500 F</div></div>
+          <div class="tx-group-label">Hier</div>
+          <div class="tx-row"><div class="tx-icon in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div class="tx-info"><div class="tx-name">Recharge Mobile Money</div><div class="tx-sub">Hier, 18:47</div></div><div class="tx-amount in">+ 20 000 F</div></div>
+          <div class="tx-row"><div class="tx-icon out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg></div><div class="tx-info"><div class="tx-name">Transfert · Moussa K.</div><div class="tx-sub">Hier, 12:30</div></div><div class="tx-amount out">− 5 000 F</div></div>
+        </div>
+        <div class="spacer"></div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/></svg><span class="nav-label">Accueil</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="nav-label">Catalogue</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 9h18"/><circle cx="16" cy="14" r="1.1" fill="currentColor" stroke="none"/></svg><span class="nav-label">Wallet</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg><span class="nav-label">Trust</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-3.5 4-5.5 7-5.5s6 2 7 5.5"/></svg><span class="nav-label">Profil</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="frame-col">
+    <div class="frame-label">3. Fiche produit tontine</div>
+    <div class="frame"><div class="screen">
+      <div class="scroll fiche">
+        <button class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg></button>
+        <div class="hero">
+          <div class="theme-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></div>
+          <div class="theme-tag">Objectif : Rentrée scolaire</div>
+          <div><div class="product-title">Tontine Rentrée Scolaire</div><div class="product-sub">Groupe B · 10 places</div></div>
+        </div>
+        <div class="focal-card"><div class="focal-label">Cotisation</div><div class="focal-amount">10 000 FCFA</div><div class="focal-freq">par mois</div></div>
+        <div class="info-grid">
+          <div class="info-card"><div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><polyline points="12 7.5 12 12 15.5 14"/></svg></div><div class="info-label">Durée totale</div><div class="info-value">10 mois</div></div>
+          <div class="info-card"><div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-3.5 4-5.5 7-5.5s6 2 7 5.5"/></svg></div><div class="info-label">Places restantes</div><div class="info-value">3 / 10</div></div>
+          <div class="info-card"><div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div><div class="info-label">Trust Score requis</div><div class="info-value">60 / 100</div></div>
+          <div class="info-card"><div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9L2.5 18a1.8 1.8 0 0 0 1.5 2.7h16a1.8 1.8 0 0 0 1.5-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0z"/></svg></div><div class="info-label">Pénalité de retard</div><div class="info-value">2% après 7j</div></div>
+        </div>
+        <div class="desc-block"><div class="desc-title">À propos de ce groupe</div><div class="desc-text">Groupe supervisé par BingMoney. Cotisation mensuelle de 10 000 FCFA pendant 10 mois, versement cash à tour de rôle. L'ordre des tours est fixé à la souscription et le décaissement est automatique à chaque échéance.</div></div>
+      </div>
+      <div class="bottom-bar">
+        <button class="cta-primary">Vérifier mon éligibilité<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
+        <div class="bottom-note">Sans engagement · réponse immédiate</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="frame-col">
+    <div class="frame-label">4. Validation de sécurité</div>
+    <div class="frame"><div class="screen sec-screen">
+      <div class="top-bar"><button class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+      <div class="sec-body">
+        <div class="lock-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
+        <div class="auth-title">Confirmer le transfert</div>
+        <div class="auth-amount">15 000 FCFA</div>
+        <div class="auth-target">vers Moussa Koné</div>
+        <div class="pin-dots"><div class="pin-dot filled"></div><div class="pin-dot filled"></div><div class="pin-dot filled"></div><div class="pin-dot"></div></div>
+        <div class="biometric-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a7 7 0 0 0-7 7c0 3 1 4.5 1 7"/><path d="M12 3a7 7 0 0 1 7 7c0 1.5-.1 2.6-.4 3.6"/><path d="M8.5 20c-.6-1.2-1-2.5-1-5a4.5 4.5 0 0 1 9 0c0 1 0 1.7-.1 2.3"/><path d="M12 10a3 3 0 0 0-3 3c0 3 1 5 2 7"/><path d="M12 10a3 3 0 0 1 3 3c0 1.3-.1 2.3-.4 3.2"/></svg>Utiliser Face ID</div>
+      </div>
+      <div class="keypad">
+        <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+        <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+        <button class="key">7</button><button class="key">8</button><button class="key">9</button>
+        <div></div><button class="key">0</button>
+        <button class="key action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-6-6 6-6z"/><line x1="13" y1="10" x2="18" y2="15"/><line x1="18" y1="10" x2="13" y2="15"/></svg></button>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="frame-col">
+    <div class="frame-label">5. Trust Score</div>
+    <div class="frame"><div class="screen">
+      <div class="scroll">
+        <div class="top-row"><button class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg></button><div class="page-title" style="font-size:19px">Trust Score</div></div>
+        <div class="gauge-card"><div class="gauge-num">78</div><div class="gauge-max">sur 100</div><div class="gauge-pill">Bon niveau</div></div>
+        <div class="section-title">Détail par dimension</div>
+        <div class="dim-list">
+          <div class="dim-card"><div class="dim-top"><div class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="1.8"/><line x1="13" y1="9.5" x2="18" y2="9.5"/><line x1="13" y1="12.5" x2="18" y2="12.5"/></svg></div><div class="dim-name">Identité (KYC)</div><div class="dim-score">20 / 20</div></div><div class="dim-track"><div class="dim-fill" style="width:100%"></div></div></div>
+          <div class="dim-card"><div class="dim-top"><div class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><polyline points="12 7.5 12 12 15.5 14"/></svg></div><div class="dim-name">Régularité de paiement</div><div class="dim-score">14 / 20</div></div><div class="dim-track"><div class="dim-fill" style="width:70%"></div></div></div>
+          <div class="dim-card"><div class="dim-top"><div class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5"/><polyline points="18 3 18 7 14 7"/><path d="M20 12a8 8 0 0 1-14 5"/><polyline points="6 21 6 17 10 17"/></svg></div><div class="dim-name">Tontines terminées</div><div class="dim-score">16 / 20</div></div><div class="dim-track"><div class="dim-fill" style="width:80%"></div></div></div>
+          <div class="dim-card"><div class="dim-top"><div class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.5z"/></svg></div><div class="dim-name">Réputation</div><div class="dim-score">15 / 20</div></div><div class="dim-track"><div class="dim-fill" style="width:75%"></div></div></div>
+          <div class="dim-card"><div class="dim-top"><div class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><rect x="9.3" y="10.5" width="5.4" height="4.2" rx="1"/><path d="M10.2 10.5v-1.3a1.8 1.8 0 0 1 3.6 0v1.3"/></svg></div><div class="dim-name">Sécurité du compte</div><div class="dim-score">13 / 20</div></div><div class="dim-track"><div class="dim-fill" style="width:65%"></div></div></div>
+        </div>
+        <div class="section-title">Conseils pour progresser</div>
+        <div class="tips">
+          <div class="tip-card"><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><rect x="9.3" y="10.5" width="5.4" height="4.2" rx="1"/><path d="M10.2 10.5v-1.3a1.8 1.8 0 0 1 3.6 0v1.3"/></svg></div><div class="tip-text">Activez la vérification biométrique sur votre compte. <b>+5 points</b></div></div>
+          <div class="tip-card"><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><polyline points="12 7.5 12 12 15.5 14"/></svg></div><div class="tip-text">Payez vos 3 prochaines échéances avant la date limite. <b>+8 points</b></div></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>
