@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  phoneNumber String   @unique
+  fullName    String?
+  pinHash     String?
+  kycStatus   KycStatus @default(UNVERIFIED)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  otpCodes     OtpCode[]
+  kycDocuments KycDocument[]
+  sessions     Session[]
+}
+
+model OtpCode {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model KycDocument {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  idDocumentPath  String
+  selfiePath      String
+  status          KycStatus @default(PENDING)
+  submittedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  refreshTokenHash String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+}
