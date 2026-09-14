@@ -6,10 +6,7 @@ import { spacing, typography } from "@/theme";
 import { MainStackParamList } from "@/navigation/MainNavigator";
 import { useMainNav } from "./useMainNav";
 
-type Props = NativeStackScreenProps<
-  MainStackParamList,
-  "CataloguePlaceholder" | "TrustPlaceholder" | "ProfilePlaceholder"
->;
+type Props = NativeStackScreenProps<MainStackParamList, "TrustPlaceholder" | "ProfilePlaceholder">;
 
 function PlaceholderBody({ navigation, active, title }: Props & { active: NavKey; title: string }) {
   const onNavigate = useMainNav(navigation);
@@ -21,10 +18,6 @@ function PlaceholderBody({ navigation, active, title }: Props & { active: NavKey
       </View>
     </ScreenContainer>
   );
-}
-
-export function CataloguePlaceholderScreen(props: Props) {
-  return <PlaceholderBody {...props} active="catalogue" title="Catalogue" />;
 }
 
 export function TrustPlaceholderScreen(props: Props) {

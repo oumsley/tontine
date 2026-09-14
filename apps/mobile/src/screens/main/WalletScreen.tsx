@@ -95,6 +95,8 @@ function txnLabel(txn: TransactionSummary): string {
       return `Paiement · ${txn.counterpartyLabel ?? "Marchand"}`;
     case TransactionType.AIRTIME_PURCHASE:
       return `Crédit · ${txn.counterpartyLabel ?? ""}`;
+    case TransactionType.TONTINE_CONTRIBUTION:
+      return `Cotisation · ${txn.counterpartyLabel ?? "Tontine"}`;
     default:
       return "Transaction";
   }

@@ -4,6 +4,7 @@ export enum TransactionType {
   WITHDRAWAL = "WITHDRAWAL",
   PAYMENT = "PAYMENT",
   AIRTIME_PURCHASE = "AIRTIME_PURCHASE",
+  TONTINE_CONTRIBUTION = "TONTINE_CONTRIBUTION",
 }
 
 export enum TransactionStatus {

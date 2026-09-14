@@ -85,7 +85,11 @@ export class KycService {
       where: { id: document.id },
       data: { status, reviewedAt, rejectionReason: rejectionReason ?? null },
     });
-    await this.prisma.user.update({ where: { id: userId }, data: { kycStatus: status } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      // Placeholder trust score pending Module 4's full 5-dimension engine.
+      data: { kycStatus: status, trustScore: status === KycStatus.VERIFIED ? 60 : 0 },
+    });
 
     return {
       status,

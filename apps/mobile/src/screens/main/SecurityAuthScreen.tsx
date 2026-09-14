@@ -7,6 +7,7 @@ import { PinDots, PinKeypad, ScreenContainer } from "@/components";
 import { colors, fontFamily, radii, spacing, typography } from "@/theme";
 import { formatAmount } from "@/utils/formatCurrency";
 import { walletApi } from "@/api/wallet";
+import { catalogApi } from "@/api/catalog";
 import { ApiError } from "@/api/client";
 import { pinCache } from "@/auth/pinCache";
 import { generateIdempotencyKey } from "@/utils/idempotency";
@@ -28,6 +29,10 @@ function actionCopy(intent: WalletIntent, targetLabel: string): { title: string;
       return { title: "Paiement effectué", subtitle: `${amount} payés à ${targetLabel}.` };
     case "AIRTIME":
       return { title: "Crédit envoyé", subtitle: `${amount} envoyés au ${targetLabel}.` };
+    case "SUBSCRIBE":
+      return { title: "Souscription confirmée", subtitle: `Vous avez rejoint ${targetLabel}.` };
+    case "PAY_CONTRIBUTION":
+      return { title: "Cotisation payée", subtitle: `${amount} réglés pour ${targetLabel}.` };
   }
 }
 
@@ -41,11 +46,15 @@ async function executeIntent(intent: WalletIntent, pin: string, idempotencyKey: 
       return walletApi.payMerchant(intent.qrCode, intent.amount, pin, idempotencyKey);
     case "AIRTIME":
       return walletApi.buyAirtime(intent.phoneNumber, intent.provider, intent.amount, pin, idempotencyKey);
+    case "SUBSCRIBE":
+      return catalogApi.subscribe(intent.groupId, pin, idempotencyKey);
+    case "PAY_CONTRIBUTION":
+      return catalogApi.payContribution(intent.contributionId, pin, idempotencyKey);
   }
 }
 
 export function SecurityAuthScreen({ navigation, route }: Props) {
-  const { intent, targetLabel } = route.params;
+  const { intent, targetLabel, returnTo = "Wallet" } = route.params;
   const idempotencyKey = useRef(generateIdempotencyKey()).current;
 
   const [code, setCode] = useState("");
@@ -63,7 +72,7 @@ export function SecurityAuthScreen({ navigation, route }: Props) {
     try {
       await executeIntent(intent, pin, idempotencyKey);
       const copy = actionCopy(intent, targetLabel);
-      navigation.reset({ index: 1, routes: [{ name: "Wallet" }, { name: "ActionSuccess", params: copy }] });
+      navigation.reset({ index: 1, routes: [{ name: returnTo }, { name: "ActionSuccess", params: copy }] });
     } catch (err) {
       setCode("");
       setError(err instanceof ApiError ? err.message : "L'opération a échoué, réessayez.");

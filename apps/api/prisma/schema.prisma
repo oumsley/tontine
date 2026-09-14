@@ -20,6 +20,10 @@ model User {
   fullName    String?
   pinHash     String?
   kycStatus   KycStatus @default(UNVERIFIED)
+  // Placeholder pending the full 5-dimension engine (Module 4): bumped to a
+  // flat value on KYC verification so the catalog's eligibility gate has
+  // something real to check against.
+  trustScore  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -28,6 +32,7 @@ model User {
   sessions         Session[]
   wallet           Wallet?
   initiatedTxns    Transaction[]
+  subscriptions    TontineSubscription[]
 }
 
 model OtpCode {
@@ -62,6 +67,7 @@ enum TransactionType {
   WITHDRAWAL
   PAYMENT
   AIRTIME_PURCHASE
+  TONTINE_CONTRIBUTION
 }
 
 enum TransactionStatus {
@@ -150,4 +156,94 @@ model Session {
   createdAt        DateTime  @default(now())
 
   @@index([userId])
+}
+
+enum TontineKind {
+  CLASSIQUE
+  PROJET
+}
+
+enum ContributionFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum TontineGroupStatus {
+  OPEN
+  FULL
+  COMPLETED
+}
+
+// Configured entirely by the back-office (BingMoney operates every group;
+// members browse and subscribe, they never create or configure a group).
+model TontineProduct {
+  id                  String                @id @default(uuid())
+  name                String
+  kind                TontineKind
+  theme               String?
+  description         String
+  contributionAmount  Int
+  frequency           ContributionFrequency
+  totalSlots          Int
+  minTrustScore       Int                   @default(0)
+  lateGracePeriodDays Int
+  latePenaltyRateBps  Int // basis points (1/100 of a percent), e.g. 200 = 2%
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+
+  groups TontineGroup[]
+}
+
+model TontineGroup {
+  id        String              @id @default(uuid())
+  productId String
+  product   TontineProduct      @relation(fields: [productId], references: [id])
+  label     String
+  status    TontineGroupStatus  @default(OPEN)
+  startedAt DateTime            @default(now())
+  createdAt DateTime            @default(now())
+
+  subscriptions TontineSubscription[]
+}
+
+model TontineSubscription {
+  id           String   @id @default(uuid())
+  groupId      String
+  group        TontineGroup @relation(fields: [groupId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  turnNumber   Int
+  subscribedAt DateTime @default(now())
+
+  termsAcceptance TermsAcceptance?
+  contributions   TontineContribution[]
+
+  @@unique([groupId, userId])
+  @@unique([groupId, turnNumber])
+  @@index([userId])
+}
+
+// Immutable record of what the member agreed to and when — the timestamp
+// and the exact terms snapshot are what settle a dispute later.
+model TermsAcceptance {
+  id             String               @id @default(uuid())
+  subscriptionId String               @unique
+  subscription   TontineSubscription  @relation(fields: [subscriptionId], references: [id])
+  acceptedAt     DateTime             @default(now())
+  termsSnapshot  Json
+}
+
+model TontineContribution {
+  id             String              @id @default(uuid())
+  subscriptionId String
+  subscription   TontineSubscription @relation(fields: [subscriptionId], references: [id])
+  cycleNumber    Int
+  dueDate        DateTime
+  amount         Int
+  paidAt         DateTime?
+  transactionId  String?
+
+  @@unique([subscriptionId, cycleNumber])
+  @@index([subscriptionId])
 }

@@ -1,0 +1,90 @@
+export enum TontineKind {
+  CLASSIQUE = "CLASSIQUE",
+  PROJET = "PROJET",
+}
+
+export enum ContributionFrequency {
+  WEEKLY = "WEEKLY",
+  BIWEEKLY = "BIWEEKLY",
+  MONTHLY = "MONTHLY",
+}
+
+export enum ContributionStatus {
+  PAID = "PAID",
+  UPCOMING = "UPCOMING",
+  LATE = "LATE",
+}
+
+export interface ProductSummary {
+  id: string;
+  name: string;
+  kind: TontineKind;
+  theme: string | null;
+  contributionAmount: number;
+  frequency: ContributionFrequency;
+  totalSlots: number;
+  availableSlots: number;
+  minTrustScore: number;
+}
+
+export interface ProductDetail extends ProductSummary {
+  description: string;
+  lateGracePeriodDays: number;
+  latePenaltyRateBps: number;
+  joinableGroupId: string | null;
+  eligibility: {
+    eligible: boolean;
+    reasons: string[];
+  };
+}
+
+export interface CatalogFilters {
+  theme?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  hasAvailableSlots?: boolean;
+}
+
+export interface SubscribeDto {
+  groupId: string;
+  pin: string;
+  idempotencyKey: string;
+}
+
+export interface SubscriptionSummary {
+  subscriptionId: string;
+  productName: string;
+  theme: string | null;
+  groupLabel: string;
+  turnNumber: number;
+  totalSlots: number;
+  currentCycle: number;
+  nextDueDate: string | null;
+  nextDueAmount: number | null;
+  memberStatus: ContributionStatus;
+}
+
+export interface ContributionLine {
+  id: string;
+  cycleNumber: number;
+  dueDate: string;
+  amount: number;
+  paidAt: string | null;
+  status: ContributionStatus;
+}
+
+export interface MemberStatusLine {
+  turnNumber: number;
+  isYou: boolean;
+  status: ContributionStatus;
+}
+
+export interface SubscriptionDetail extends SubscriptionSummary {
+  contributions: ContributionLine[];
+  members: MemberStatusLine[];
+}
+
+export interface PayContributionDto {
+  pin: string;
+  idempotencyKey: string;
+}

@@ -4,7 +4,7 @@ import { MainStackParamList } from "@/navigation/MainNavigator";
 
 const ROUTE_BY_KEY: Record<NavKey, keyof MainStackParamList> = {
   home: "Home",
-  catalogue: "CataloguePlaceholder",
+  catalogue: "Catalogue",
   wallet: "Wallet",
   trust: "TrustPlaceholder",
   profile: "ProfilePlaceholder",

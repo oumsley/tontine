@@ -14,7 +14,11 @@ interface Props {
 export function ScreenContainer({ children, scroll = true, style, contentStyle, footer }: PropsWithChildren<Props>) {
   const Body = scroll ? ScrollView : View;
   const bodyProps = scroll
-    ? { contentContainerStyle: [styles.content, contentStyle], keyboardShouldPersistTaps: "handled" as const }
+    ? {
+        style: styles.scroll,
+        contentContainerStyle: [styles.content, contentStyle],
+        keyboardShouldPersistTaps: "handled" as const,
+      }
     : { style: [styles.content, contentStyle] };
 
   return (
@@ -29,6 +33,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,

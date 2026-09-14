@@ -160,6 +160,30 @@ export class WalletService {
     });
   }
 
+  async contributeToTontine(
+    userId: string,
+    amount: number,
+    pin: string,
+    idempotencyKey: string,
+    counterpartyLabel: string,
+    metadata: Record<string, unknown>,
+  ) {
+    await this.authService.verifyPin(userId, pin);
+    const wallet = await this.getOrCreateWallet(userId);
+
+    return this.runIdempotentTransaction({
+      idempotencyKey,
+      type: TransactionType.TONTINE_CONTRIBUTION,
+      amount,
+      initiatorUserId: userId,
+      counterpartyLabel,
+      metadata,
+      work: async (tx, transactionId) => {
+        await this.postEntry(tx, wallet.id, LedgerDirection.DEBIT, amount, transactionId);
+      },
+    });
+  }
+
   private toSummary(entry: {
     id: string;
     direction: string;

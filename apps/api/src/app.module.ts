@@ -5,6 +5,7 @@ import { AuthModule } from "./auth/auth.module";
 import { KycModule } from "./kyc/kyc.module";
 import { WalletModule } from "./wallet/wallet.module";
 import { MerchantsModule } from "./merchants/merchants.module";
+import { CatalogModule } from "./catalog/catalog.module";
 import { AppController } from "./app.controller";
 
 @Module({
@@ -15,6 +16,7 @@ import { AppController } from "./app.controller";
     KycModule,
     WalletModule,
     MerchantsModule,
+    CatalogModule,
   ],
   controllers: [AppController],
 })

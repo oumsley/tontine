@@ -98,7 +98,7 @@ describe("KycService", () => {
       });
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: "user-1" },
-        data: { kycStatus: KycStatus.VERIFIED },
+        data: { kycStatus: KycStatus.VERIFIED, trustScore: 60 },
       });
       expect(result.status).toBe(KycStatus.VERIFIED);
     });
