@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { KycStatus, type KycStatusResponse } from "@bingmoney/shared";
 import Svg, { Circle, Path, Polyline } from "react-native-svg";
 import { Button, ScreenContainer, StepDots } from "@/components";
-import { colors, radii, spacing, typography } from "@/theme";
+import { colors, fontFamily, radii, spacing, typography } from "@/theme";
 import { kycApi } from "@/api/kyc";
+import { useSession } from "@/auth/SessionContext";
 import { OnboardingStackParamList } from "@/navigation/OnboardingNavigator";
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, "KycPending">;
@@ -13,6 +14,7 @@ type Props = NativeStackScreenProps<OnboardingStackParamList, "KycPending">;
 const POLL_INTERVAL_MS = 4000;
 
 export function KycPendingScreen({ navigation }: Props) {
+  const session = useSession();
   const [status, setStatus] = useState<KycStatusResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -69,7 +71,14 @@ export function KycPendingScreen({ navigation }: Props) {
       {isRejected ? (
         <Button label="Réessayer" onPress={() => navigation.navigate("KycCapture")} />
       ) : (
-        <Button label="Actualiser" onPress={handleManualRefresh} loading={refreshing} variant="secondary" />
+        <View style={{ gap: spacing.md }}>
+          <Button label="Accéder à BingMoney" onPress={() => void session.refresh()} />
+          <Pressable onPress={handleManualRefresh} disabled={refreshing} style={{ alignItems: "center" }}>
+            <Text style={{ fontFamily: fontFamily.semiBold, color: colors.inkSoft, fontSize: 13.5 }}>
+              {refreshing ? "Actualisation…" : "Actualiser le statut"}
+            </Text>
+          </Pressable>
+        </View>
       )}
     </ScreenContainer>
   );

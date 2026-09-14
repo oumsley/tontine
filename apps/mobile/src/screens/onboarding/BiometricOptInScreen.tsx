@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, Text, View } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
-import * as SecureStore from "expo-secure-store";
 import Svg, { Path } from "react-native-svg";
 import { Button, ScreenContainer, StepDots } from "@/components";
 import { colors, fontFamily, radii, spacing, typography } from "@/theme";
+import { pinCache } from "@/auth/pinCache";
 import { OnboardingStackParamList } from "@/navigation/OnboardingNavigator";
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, "BiometricOptIn">;
@@ -28,7 +28,7 @@ export function BiometricOptInScreen({ navigation }: Props) {
         promptMessage: "Activer la biométrie pour BingMoney",
       });
       if (result.success) {
-        await SecureStore.setItemAsync("bingmoney.biometricsEnabled", "true");
+        await pinCache.setBiometricsEnabled(true);
         navigation.navigate("KycCapture");
       } else {
         setError("Authentification biométrique annulée.");

@@ -11,6 +11,8 @@ import {
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
 import { OnboardingNavigator } from "@/navigation/OnboardingNavigator";
+import { MainNavigator } from "@/navigation/MainNavigator";
+import { SessionProvider, useSession } from "@/auth/SessionContext";
 import { colors, fontFamily } from "@/theme";
 
 // Apply Inter as the default Text font app-wide once loaded, so screens
@@ -19,6 +21,12 @@ const AnyText = Text as unknown as { defaultProps?: { style?: unknown } };
 function applyDefaultFont() {
   AnyText.defaultProps = AnyText.defaultProps ?? {};
   AnyText.defaultProps.style = [{ fontFamily: fontFamily.regular }, AnyText.defaultProps.style];
+}
+
+function RootNavigator() {
+  const { hasSession } = useSession();
+  if (hasSession === null) return null;
+  return hasSession ? <MainNavigator /> : <OnboardingNavigator />;
 }
 
 export default function App() {
@@ -37,9 +45,11 @@ export default function App() {
   applyDefaultFont();
 
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
-      <OnboardingNavigator />
-    </NavigationContainer>
+    <SessionProvider>
+      <NavigationContainer>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </NavigationContainer>
+    </SessionProvider>
   );
 }

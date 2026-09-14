@@ -23,9 +23,11 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  otpCodes     OtpCode[]
-  kycDocuments KycDocument[]
-  sessions     Session[]
+  otpCodes         OtpCode[]
+  kycDocuments     KycDocument[]
+  sessions         Session[]
+  wallet           Wallet?
+  initiatedTxns    Transaction[]
 }
 
 model OtpCode {
@@ -52,6 +54,90 @@ model KycDocument {
   rejectionReason String?
 
   @@index([userId])
+}
+
+enum TransactionType {
+  TOPUP
+  TRANSFER
+  WITHDRAWAL
+  PAYMENT
+  AIRTIME_PURCHASE
+}
+
+enum TransactionStatus {
+  COMPLETED
+  FAILED
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CARD
+  BANK_TRANSFER
+}
+
+// Amounts are whole-number FCFA (XOF has no minor subdivision in practice),
+// stored as Int to avoid floating point drift entirely.
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+  isMerchant Boolean @default(false)
+  balance   Int      @default(0)
+  currency  String   @default("XOF")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledgerEntries LedgerEntry[]
+  merchant      Merchant?
+}
+
+model Merchant {
+  id          String   @id @default(uuid())
+  displayName String
+  qrCode      String   @unique
+  walletId    String   @unique
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+// One row per user-facing event; the actual balance movements are its
+// LedgerEntry children (one per wallet touched, two for a transfer).
+model Transaction {
+  id                String            @id @default(uuid())
+  type              TransactionType
+  status            TransactionStatus @default(COMPLETED)
+  amount            Int
+  currency          String            @default("XOF")
+  idempotencyKey    String            @unique
+  initiatorUserId   String
+  initiator         User              @relation(fields: [initiatorUserId], references: [id])
+  counterpartyLabel String?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+
+  ledgerEntries LedgerEntry[]
+
+  @@index([initiatorUserId])
+}
+
+model LedgerEntry {
+  id            String          @id @default(uuid())
+  walletId      String
+  wallet        Wallet          @relation(fields: [walletId], references: [id])
+  transactionId String
+  transaction   Transaction     @relation(fields: [transactionId], references: [id])
+  direction     LedgerDirection
+  amount        Int
+  balanceAfter  Int
+  createdAt     DateTime        @default(now())
+
+  @@unique([transactionId, walletId])
+  @@index([walletId])
 }
 
 model Session {

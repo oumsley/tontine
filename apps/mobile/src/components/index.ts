@@ -6,3 +6,7 @@ export * from "./PinDots";
 export * from "./StepDots";
 export * from "./BackButton";
 export * from "./TextField";
+export * from "./BottomNavBar";
+export * from "./BalanceCard";
+export * from "./AmountInput";
+export * from "./MethodSelector";

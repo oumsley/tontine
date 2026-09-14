@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { PinDots, PinKeypad, ScreenContainer, StepDots } from "@/components";
 import { colors, fontFamily, spacing, typography } from "@/theme";
 import { authApi } from "@/api/auth";
+import { pinCache } from "@/auth/pinCache";
 import { ApiError } from "@/api/client";
 import { OnboardingStackParamList } from "@/navigation/OnboardingNavigator";
 
@@ -47,6 +48,9 @@ export function PinCreationScreen({ navigation }: Props) {
     setError(null);
     try {
       await authApi.setPin(pin);
+      // Cached in the OS Keychain/Keystore so a later biometric prompt can
+      // stand in for retyping the PIN — see BiometricOptInScreen.
+      await pinCache.savePin(pin);
       navigation.navigate("BiometricOptIn");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Impossible d'enregistrer le PIN.");
