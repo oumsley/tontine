@@ -66,6 +66,14 @@ describe("Auth + KYC (e2e)", () => {
       .expect(200)
       .expect((res: request.Response) => expect(res.body.valid).toBe(true));
 
+    const meRes = await request(app.getHttpServer())
+      .get("/auth/me")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(meRes.body.phoneNumber).toBe(phoneNumber);
+    expect(meRes.body.kycStatus).toBe("UNVERIFIED");
+    expect(meRes.body.trustScore).toBe(0);
+
     const refreshRes = await request(app.getHttpServer())
       .post("/auth/refresh")
       .send({ refreshToken })

@@ -10,5 +10,6 @@ export interface UserSummary {
   phoneNumber: string;
   fullName: string | null;
   kycStatus: KycStatus;
+  trustScore: number;
   createdAt: string;
 }

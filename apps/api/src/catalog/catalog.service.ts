@@ -330,7 +330,12 @@ export class CatalogService {
     const subscription = await this.prisma.tontineSubscription.findUniqueOrThrow({
       where: { id: subscriptionId },
       include: {
-        group: { include: { product: true } },
+        group: {
+          include: {
+            product: true,
+            subscriptions: { include: { contributions: true } },
+          },
+        },
         contributions: { orderBy: { cycleNumber: "asc" } },
       },
     });
@@ -338,9 +343,13 @@ export class CatalogService {
     const nextDue = subscription.contributions.find((c) => !c.paidAt);
     const currentCycle = subscription.contributions.filter((c) => c.dueDate.getTime() <= Date.now()).length;
 
+    const memberStatuses = subscription.group.subscriptions.map((m) => this.overallMemberStatus(m.contributions));
+    const membersLate = memberStatuses.filter((s) => s === ContributionStatus.LATE).length;
+
     return {
       subscriptionId: subscription.id,
       productName: subscription.group.product.name,
+      description: subscription.group.product.description,
       theme: subscription.group.product.theme,
       groupLabel: subscription.group.label,
       turnNumber: subscription.turnNumber,
@@ -349,6 +358,8 @@ export class CatalogService {
       nextDueDate: nextDue?.dueDate.toISOString() ?? null,
       nextDueAmount: nextDue?.amount ?? null,
       memberStatus: this.overallMemberStatus(subscription.contributions),
+      membersUpToDate: memberStatuses.length - membersLate,
+      membersLate,
     };
   }
 }

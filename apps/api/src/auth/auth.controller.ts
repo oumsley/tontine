@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from "@nestjs/common";
-import type { AuthTokens } from "@bingmoney/shared";
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from "@nestjs/common";
+import type { AuthTokens, UserSummary } from "@bingmoney/shared";
 import { AuthService } from "./auth.service";
 import { RequestOtpDto } from "./dto/request-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
@@ -42,6 +42,12 @@ export class AuthController {
   ): Promise<{ valid: boolean }> {
     const valid = await this.authService.verifyPin(user.sub, dto.pin);
     return { valid };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("me")
+  getProfile(@CurrentUser() user: JwtPayload): Promise<UserSummary> {
+    return this.authService.getProfile(user.sub);
   }
 
   @Post("refresh")

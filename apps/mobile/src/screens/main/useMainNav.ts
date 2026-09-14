@@ -4,10 +4,7 @@ import { MainStackParamList } from "@/navigation/MainNavigator";
 
 const ROUTE_BY_KEY: Record<NavKey, keyof MainStackParamList> = {
   home: "Home",
-  catalogue: "Catalogue",
-  wallet: "Wallet",
-  trust: "TrustPlaceholder",
-  profile: "ProfilePlaceholder",
+  profile: "Profile",
 };
 
 export function useMainNav(navigation: NativeStackNavigationProp<MainStackParamList, keyof MainStackParamList>) {

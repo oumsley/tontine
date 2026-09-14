@@ -4,12 +4,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Polyline } from "react-native-svg";
 import { ContributionFrequency, TontineKind, type ProductSummary } from "@bingmoney/shared";
-import { BottomNavBar, ScreenContainer, TextField } from "@/components";
-import { colors, radii, spacing, typography } from "@/theme";
+import { BackButton, ScreenContainer, TextField } from "@/components";
+import { colors, fontFamily, radii, spacing, typography } from "@/theme";
 import { formatAmount } from "@/utils/formatCurrency";
 import { catalogApi } from "@/api/catalog";
 import { MainStackParamList } from "@/navigation/MainNavigator";
-import { useMainNav } from "./useMainNav";
 
 const FREQUENCY_LABEL: Record<ContributionFrequency, string> = {
   [ContributionFrequency.WEEKLY]: "/ semaine",
@@ -17,12 +16,20 @@ const FREQUENCY_LABEL: Record<ContributionFrequency, string> = {
   [ContributionFrequency.MONTHLY]: "/ mois",
 };
 
-type Props = NativeStackScreenProps<MainStackParamList, "Catalogue">;
+type CategoryTab = "ALL" | TontineKind;
 
-export function CatalogueScreen({ navigation }: Props) {
-  const onNavigate = useMainNav(navigation);
+const TABS: { key: CategoryTab; label: string }[] = [
+  { key: "ALL", label: "Tout" },
+  { key: TontineKind.CLASSIQUE, label: "Argent" },
+  { key: TontineKind.PROJET, label: "Biens" },
+];
+
+type Props = NativeStackScreenProps<MainStackParamList, "Offers">;
+
+export function OffersScreen({ navigation }: Props) {
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<CategoryTab>("ALL");
 
   useFocusEffect(
     useCallback(() => {
@@ -38,16 +45,29 @@ export function CatalogueScreen({ navigation }: Props) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) => p.name.toLowerCase().includes(q) || (p.theme ?? "").toLowerCase().includes(q),
-    );
-  }, [products, query]);
+    return products.filter((p) => {
+      if (tab !== "ALL" && p.kind !== tab) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || (p.theme ?? "").toLowerCase().includes(q);
+    });
+  }, [products, query, tab]);
 
   return (
-    <ScreenContainer footer={<BottomNavBar active="catalogue" onNavigate={onNavigate} />}>
-      <Text style={typography.title}>Catalogue</Text>
+    <ScreenContainer>
+      <BackButton onPress={() => navigation.goBack()} />
+      <Text style={typography.title}>Les Offres</Text>
       <TextField label="Rechercher" value={query} onChangeText={setQuery} placeholder="Thème, nom du groupe…" />
+
+      <View style={styles.tabRow}>
+        {TABS.map((t) => {
+          const selected = t.key === tab;
+          return (
+            <Pressable key={t.key} onPress={() => setTab(t.key)} style={[styles.tab, selected && styles.tabSelected]}>
+              <Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{t.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <View style={{ gap: spacing.md }}>
         {filtered.length === 0 ? (
@@ -67,7 +87,7 @@ export function CatalogueScreen({ navigation }: Props) {
                 ) : (
                   <View style={styles.badgeOutline}>
                     <Text style={styles.badgeOutlineLabel}>
-                      {product.kind === TontineKind.CLASSIQUE ? "Classique" : "Projet"}
+                      {product.kind === TontineKind.CLASSIQUE ? "Argent" : "Biens"}
                     </Text>
                   </View>
                 )}
@@ -92,6 +112,19 @@ export function CatalogueScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  tabRow: { flexDirection: "row", gap: spacing.sm },
+  tab: {
+    paddingHorizontal: spacing.lg,
+    height: 40,
+    borderRadius: radii.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabSelected: { borderColor: colors.accent, backgroundColor: colors.accentTint },
+  tabLabel: { fontSize: 13.5, fontFamily: fontFamily.semiBold, color: colors.inkSoft },
+  tabLabelSelected: { color: colors.accentDark },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,

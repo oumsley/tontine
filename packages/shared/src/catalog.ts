@@ -54,6 +54,7 @@ export interface SubscribeDto {
 export interface SubscriptionSummary {
   subscriptionId: string;
   productName: string;
+  description: string;
   theme: string | null;
   groupLabel: string;
   turnNumber: number;
@@ -62,6 +63,8 @@ export interface SubscriptionSummary {
   nextDueDate: string | null;
   nextDueAmount: number | null;
   memberStatus: ContributionStatus;
+  membersUpToDate: number;
+  membersLate: number;
 }
 
 export interface ContributionLine {

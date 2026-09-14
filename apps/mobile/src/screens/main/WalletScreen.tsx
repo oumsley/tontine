@@ -5,17 +5,15 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
 import type { TransactionSummary } from "@bingmoney/shared";
 import { LedgerDirection, TransactionType } from "@bingmoney/shared";
-import { BalanceCard, BottomNavBar, ScreenContainer } from "@/components";
+import { BackButton, BalanceCard, ScreenContainer } from "@/components";
 import { colors, radii, spacing, typography } from "@/theme";
 import { walletApi } from "@/api/wallet";
 import { formatAmount } from "@/utils/formatCurrency";
 import { MainStackParamList } from "@/navigation/MainNavigator";
-import { useMainNav } from "./useMainNav";
 
 type Props = NativeStackScreenProps<MainStackParamList, "Wallet">;
 
 export function WalletScreen({ navigation }: Props) {
-  const onNavigate = useMainNav(navigation);
   const [balance, setBalance] = useState(0);
   const [history, setHistory] = useState<TransactionSummary[]>([]);
 
@@ -34,17 +32,16 @@ export function WalletScreen({ navigation }: Props) {
   );
 
   return (
-    <ScreenContainer footer={<BottomNavBar active="wallet" onNavigate={onNavigate} />}>
-      <Text style={typography.title}>Wallet</Text>
+    <ScreenContainer>
+      <BackButton onPress={() => navigation.goBack()} />
+      <Text style={typography.title}>MonCompte</Text>
 
-      <BalanceCard label="Solde disponible" amount={balance} />
+      <BalanceCard label="Mon solde" amount={balance} />
 
       <View style={styles.quickGrid}>
         <QuickAction label="Recharger" onPress={() => navigation.navigate("Recharge")} icon={<PlusIcon />} />
-        <QuickAction label="Transférer" onPress={() => navigation.navigate("Transfer")} icon={<SendIcon />} />
-        <QuickAction label="Scanner" onPress={() => navigation.navigate("ScanToPay")} icon={<ScanIcon />} />
         <QuickAction label="Retrait" onPress={() => navigation.navigate("Withdraw")} icon={<WithdrawIcon />} />
-        <QuickAction label="Crédit & data" onPress={() => navigation.navigate("Airtime")} icon={<PhoneIcon />} />
+        <QuickAction label="Paiement" onPress={() => navigation.navigate("Payment")} icon={<PaymentShortcutIcon />} />
       </View>
 
       <Text style={typography.sectionTitle}>Historique</Text>
@@ -83,7 +80,7 @@ export function WalletScreen({ navigation }: Props) {
   );
 }
 
-function txnLabel(txn: TransactionSummary): string {
+export function txnLabel(txn: TransactionSummary): string {
   switch (txn.type) {
     case TransactionType.TOPUP:
       return "Recharge";
@@ -111,7 +108,7 @@ function QuickAction({ label, icon, onPress }: { label: string; icon: React.Reac
   );
 }
 
-const iconProps = {
+export const iconProps = {
   width: 22,
   height: 22,
   viewBox: "0 0 24 24",
@@ -122,7 +119,7 @@ const iconProps = {
   strokeLinejoin: "round" as const,
 };
 
-function PlusIcon() {
+export function PlusIcon() {
   return (
     <Svg {...iconProps}>
       <Circle cx="12" cy="12" r="8.5" />
@@ -131,7 +128,7 @@ function PlusIcon() {
     </Svg>
   );
 }
-function SendIcon() {
+export function SendIcon() {
   return (
     <Svg {...iconProps}>
       <Line x1="7" y1="17" x2="17" y2="7" />
@@ -139,7 +136,7 @@ function SendIcon() {
     </Svg>
   );
 }
-function ScanIcon() {
+export function ScanIcon() {
   return (
     <Svg {...iconProps}>
       <Path d="M4 8V6a2 2 0 0 1 2-2h2" />
@@ -150,7 +147,7 @@ function ScanIcon() {
     </Svg>
   );
 }
-function WithdrawIcon() {
+export function WithdrawIcon() {
   return (
     <Svg {...iconProps}>
       <Circle cx="12" cy="12" r="8.5" />
@@ -159,7 +156,16 @@ function WithdrawIcon() {
     </Svg>
   );
 }
-function PhoneIcon() {
+export function ReceiveIcon() {
+  return (
+    <Svg {...iconProps}>
+      <Path d="M12 4v11" />
+      <Polyline points="7 10 12 15 17 10" />
+      <Path d="M5 19h14" />
+    </Svg>
+  );
+}
+export function PhoneIcon() {
   return (
     <Svg {...iconProps}>
       <Rect x="7" y="2.5" width="10" height="19" rx="2" />
@@ -167,8 +173,16 @@ function PhoneIcon() {
     </Svg>
   );
 }
+function PaymentShortcutIcon() {
+  return (
+    <Svg {...iconProps}>
+      <Rect x="3" y="6" width="18" height="13" rx="2.5" />
+      <Path d="M3 10h18" />
+    </Svg>
+  );
+}
 
-function TxTypeIcon({ type }: { type: TransactionType }) {
+export function TxTypeIcon({ type }: { type: TransactionType }) {
   const props = { ...iconProps, width: 19, height: 19 };
   switch (type) {
     case TransactionType.TOPUP:
@@ -195,7 +209,7 @@ function TxTypeIcon({ type }: { type: TransactionType }) {
 
 const styles = StyleSheet.create({
   quickGrid: { flexDirection: "row", justifyContent: "space-between" },
-  quickItem: { alignItems: "center", gap: spacing.sm, minHeight: 48, width: 66 },
+  quickItem: { alignItems: "center", gap: spacing.sm, minHeight: 48, width: 76 },
   quickIcon: {
     width: 52,
     height: 52,

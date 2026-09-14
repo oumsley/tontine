@@ -1,10 +1,10 @@
-// Extracted from design/BingMoney_Prototype_UXUI.html — keep in sync with it.
+// Design tokens per Cahier des charges Maître V3 — source de vérité produit.
 export const colors = {
   accent: "#6D28D9",
   accentDark: "#4C1D95",
-  accentTint: "#F4EEFC",
+  accentTint: "#EDE9FE",
 
-  ink: "#181121",
+  ink: "#171329",
   inkSoft: "#6E6779",
   inkFaint: "#A7A0B3",
 
@@ -12,11 +12,17 @@ export const colors = {
   background: "#FBFAFD",
   border: "#EDE9F5",
 
-  success: "#0E9F6E",
-  successTint: "#E7F8F1",
+  success: "#16A34A",
+  successTint: "#DCFCE7",
 
-  danger: "#E23D5B",
-  dangerTint: "#FDEAEE",
+  warning: "#F59E0B",
+  warningTint: "#FEF3C7",
+
+  danger: "#DC2626",
+  dangerTint: "#FEE2E2",
+
+  info: "#2563EB",
+  infoTint: "#DBEAFE",
 
   white: "#FFFFFF",
 } as const;

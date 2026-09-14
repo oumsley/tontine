@@ -8,7 +8,7 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { createHash, randomInt, randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import type { AuthTokens } from "@bingmoney/shared";
+import type { AuthTokens, UserSummary } from "@bingmoney/shared";
 import { JwtPayload } from "./interfaces/jwt-payload.interface";
 
 const OTP_LENGTH = 6;
@@ -78,6 +78,18 @@ export class AuthService {
     });
 
     return this.issueTokens(user.id, user.phoneNumber);
+  }
+
+  async getProfile(userId: string): Promise<UserSummary> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    return {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      fullName: user.fullName,
+      kycStatus: user.kycStatus as UserSummary["kycStatus"],
+      trustScore: user.trustScore,
+      createdAt: user.createdAt.toISOString(),
+    };
   }
 
   async setPin(userId: string, pin: string): Promise<void> {

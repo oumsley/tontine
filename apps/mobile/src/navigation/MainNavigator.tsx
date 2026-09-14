@@ -2,7 +2,9 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { HomeScreen } from "@/screens/main/HomeScreen";
 import { WalletScreen } from "@/screens/main/WalletScreen";
-import { ProfilePlaceholderScreen, TrustPlaceholderScreen } from "@/screens/main/PlaceholderScreen";
+import { PaymentScreen } from "@/screens/main/PaymentScreen";
+import { ReceiveScreen } from "@/screens/main/ReceiveScreen";
+import { ProfileScreen } from "@/screens/main/ProfileScreen";
 import { RechargeScreen } from "@/screens/main/RechargeScreen";
 import { TransferScreen } from "@/screens/main/TransferScreen";
 import { ScanToPayScreen } from "@/screens/main/ScanToPayScreen";
@@ -11,7 +13,8 @@ import { AirtimeScreen } from "@/screens/main/AirtimeScreen";
 import { SecurityAuthScreen } from "@/screens/main/SecurityAuthScreen";
 import { ActionSuccessScreen } from "@/screens/main/ActionSuccessScreen";
 import { TransactionReceiptScreen } from "@/screens/main/TransactionReceiptScreen";
-import { CatalogueScreen } from "@/screens/main/CatalogueScreen";
+import { MyTontinesScreen } from "@/screens/main/MyTontinesScreen";
+import { OffersScreen } from "@/screens/main/OffersScreen";
 import { ProductDetailScreen } from "@/screens/main/ProductDetailScreen";
 import { SubscriptionTermsScreen } from "@/screens/main/SubscriptionTermsScreen";
 import { TontineTrackingScreen } from "@/screens/main/TontineTrackingScreen";
@@ -19,10 +22,12 @@ import { WalletIntent } from "./walletIntents";
 
 export type MainStackParamList = {
   Home: undefined;
+  Profile: undefined;
   Wallet: undefined;
-  Catalogue: undefined;
-  TrustPlaceholder: undefined;
-  ProfilePlaceholder: undefined;
+  Payment: undefined;
+  Receive: undefined;
+  MyTontines: undefined;
+  Offers: undefined;
   Recharge: undefined;
   Transfer: undefined;
   ScanToPay: undefined;
@@ -46,10 +51,12 @@ export function MainNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
-      <Stack.Screen name="Catalogue" component={CatalogueScreen} />
-      <Stack.Screen name="TrustPlaceholder" component={TrustPlaceholderScreen} />
-      <Stack.Screen name="ProfilePlaceholder" component={ProfilePlaceholderScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="Receive" component={ReceiveScreen} />
+      <Stack.Screen name="MyTontines" component={MyTontinesScreen} />
+      <Stack.Screen name="Offers" component={OffersScreen} />
       <Stack.Screen name="Recharge" component={RechargeScreen} />
       <Stack.Screen name="Transfer" component={TransferScreen} />
       <Stack.Screen name="ScanToPay" component={ScanToPayScreen} />
