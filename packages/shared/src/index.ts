@@ -3,3 +3,4 @@ export * from "./auth";
 export * from "./kyc";
 export * from "./wallet";
 export * from "./catalog";
+export * from "./organizer";

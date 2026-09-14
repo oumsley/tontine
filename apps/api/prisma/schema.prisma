@@ -24,6 +24,8 @@ model User {
   // flat value on KYC verification so the catalog's eligibility gate has
   // something real to check against.
   trustScore  Int      @default(0)
+  isOrganizer          Boolean   @default(false)
+  organizerActivatedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -33,6 +35,22 @@ model User {
   wallet           Wallet?
   initiatedTxns    Transaction[]
   subscriptions    TontineSubscription[]
+  organizerActivation     OrganizerActivation?
+  createdProducts         TontineProduct[]          @relation("ProductCreator")
+  validatorOf             TontineValidator[]
+  requestedDisbursements  DisbursementRequest[]     @relation("DisbursementRequester")
+  disbursementValidations DisbursementValidation[]
+}
+
+// The "KYA -> acceptation des responsabilités -> activation" gate: a user
+// can only become an organizer once, after KYC is verified, by explicitly
+// accepting the organizer responsibilities terms.
+model OrganizerActivation {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  acceptedAt    DateTime @default(now())
+  termsSnapshot Json
 }
 
 model OtpCode {
@@ -68,6 +86,7 @@ enum TransactionType {
   PAYMENT
   AIRTIME_PURCHASE
   TONTINE_CONTRIBUTION
+  TONTINE_DISBURSEMENT
 }
 
 enum TransactionStatus {
@@ -100,6 +119,7 @@ model Wallet {
 
   ledgerEntries LedgerEntry[]
   merchant      Merchant?
+  tontineGroup  TontineGroup?
 }
 
 model Merchant {
@@ -175,8 +195,14 @@ enum TontineGroupStatus {
   COMPLETED
 }
 
-// Configured entirely by the back-office (BingMoney operates every group;
-// members browse and subscribe, they never create or configure a group).
+enum TontineVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// Configured by the back-office for the BingMoney catalog (createdByUserId
+// null), or by a verified organizer via the Espace organisateur — both
+// paths converge on the same engine (contributions, calendar, disbursement).
 model TontineProduct {
   id                  String                @id @default(uuid())
   name                String
@@ -190,21 +216,93 @@ model TontineProduct {
   lateGracePeriodDays Int
   latePenaltyRateBps  Int // basis points (1/100 of a percent), e.g. 200 = 2%
   isActive            Boolean               @default(true)
+  visibility          TontineVisibility     @default(PUBLIC)
+  createdByUserId     String?
+  createdBy           User?                 @relation("ProductCreator", fields: [createdByUserId], references: [id])
   createdAt           DateTime              @default(now())
 
   groups TontineGroup[]
 }
 
 model TontineGroup {
-  id        String              @id @default(uuid())
-  productId String
-  product   TontineProduct      @relation(fields: [productId], references: [id])
-  label     String
-  status    TontineGroupStatus  @default(OPEN)
-  startedAt DateTime            @default(now())
-  createdAt DateTime            @default(now())
+  id         String              @id @default(uuid())
+  productId  String
+  product    TontineProduct      @relation(fields: [productId], references: [id])
+  label      String
+  status     TontineGroupStatus  @default(OPEN)
+  // Pot into which every member's contribution is credited and from which
+  // a validated disbursement request pays the beneficiary out.
+  walletId   String              @unique
+  wallet     Wallet              @relation(fields: [walletId], references: [id])
+  // Set only for PRIVATE (organizer-created) groups; how members join
+  // without appearing in the public LesOffres catalog.
+  inviteCode String?             @unique
+  startedAt  DateTime            @default(now())
+  createdAt  DateTime            @default(now())
 
-  subscriptions TontineSubscription[]
+  subscriptions        TontineSubscription[]
+  validators           TontineValidator[]
+  disbursementRequests DisbursementRequest[]
+}
+
+// The "3 personnes habilitées" for a group's décaissement validation
+// (rule 8) — designated at tontine creation, distinct from membership.
+model TontineValidator {
+  id        String       @id @default(uuid())
+  groupId   String
+  group     TontineGroup @relation(fields: [groupId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+}
+
+enum DisbursementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum ValidationDecision {
+  APPROVED
+  REJECTED
+}
+
+// Rule 9: the organizer can never move pot funds alone — a request only
+// pays out once all 3 designated validators have approved it (unanimous).
+model DisbursementRequest {
+  id                String              @id @default(uuid())
+  groupId           String
+  group             TontineGroup        @relation(fields: [groupId], references: [id])
+  subscriptionId    String
+  subscription      TontineSubscription @relation(fields: [subscriptionId], references: [id])
+  cycleNumber       Int
+  amount            Int
+  status            DisbursementStatus  @default(PENDING)
+  requestedByUserId String
+  requestedBy       User                @relation("DisbursementRequester", fields: [requestedByUserId], references: [id])
+  transactionId     String?
+  createdAt         DateTime            @default(now())
+  decidedAt         DateTime?
+
+  validations DisbursementValidation[]
+
+  @@index([groupId])
+}
+
+model DisbursementValidation {
+  id              String              @id @default(uuid())
+  requestId       String
+  request         DisbursementRequest @relation(fields: [requestId], references: [id])
+  validatorUserId String
+  validator       User                @relation(fields: [validatorUserId], references: [id])
+  decision        ValidationDecision
+  decidedAt       DateTime            @default(now())
+
+  @@unique([requestId, validatorUserId])
 }
 
 model TontineSubscription {
@@ -218,6 +316,7 @@ model TontineSubscription {
 
   termsAcceptance TermsAcceptance?
   contributions   TontineContribution[]
+  disbursementRequests DisbursementRequest[]
 
   @@unique([groupId, userId])
   @@unique([groupId, turnNumber])

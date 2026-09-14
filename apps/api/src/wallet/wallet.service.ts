@@ -167,6 +167,7 @@ export class WalletService {
     idempotencyKey: string,
     counterpartyLabel: string,
     metadata: Record<string, unknown>,
+    groupWalletId: string,
   ) {
     await this.authService.verifyPin(userId, pin);
     const wallet = await this.getOrCreateWallet(userId);
@@ -180,6 +181,37 @@ export class WalletService {
       metadata,
       work: async (tx, transactionId) => {
         await this.postEntry(tx, wallet.id, LedgerDirection.DEBIT, amount, transactionId);
+        await this.postEntry(tx, groupWalletId, LedgerDirection.CREDIT, amount, transactionId);
+      },
+    });
+  }
+
+  /**
+   * Executes a validated disbursement: moves the amount out of the group's
+   * pot wallet straight into the beneficiary's personal wallet. Never
+   * touches the organizer's wallet (rule 9) — this only runs once a
+   * DisbursementRequest has cleared its required validations.
+   */
+  async disburseTontine(
+    groupWalletId: string,
+    beneficiaryUserId: string,
+    amount: number,
+    idempotencyKey: string,
+    counterpartyLabel: string,
+    metadata: Record<string, unknown>,
+  ) {
+    const beneficiaryWallet = await this.getOrCreateWallet(beneficiaryUserId);
+
+    return this.runIdempotentTransaction({
+      idempotencyKey,
+      type: TransactionType.TONTINE_DISBURSEMENT,
+      amount,
+      initiatorUserId: beneficiaryUserId,
+      counterpartyLabel,
+      metadata,
+      work: async (tx, transactionId) => {
+        await this.postEntry(tx, groupWalletId, LedgerDirection.DEBIT, amount, transactionId);
+        await this.postEntry(tx, beneficiaryWallet.id, LedgerDirection.CREDIT, amount, transactionId);
       },
     });
   }

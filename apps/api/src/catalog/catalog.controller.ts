@@ -6,6 +6,7 @@ import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CatalogService } from "./catalog.service";
 import { SubscribeDto } from "./dto/subscribe.dto";
+import { JoinByCodeDto } from "./dto/join-by-code.dto";
 import { PayContributionDto } from "./dto/pay-contribution.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateGroupDto } from "./dto/create-group.dto";
@@ -40,6 +41,12 @@ export class CatalogController {
   @Post("subscribe")
   subscribe(@CurrentUser() user: JwtPayload, @Body() dto: SubscribeDto) {
     return this.catalogService.subscribe(user.sub, dto.groupId, dto.pin, dto.idempotencyKey);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("join-by-code")
+  joinByCode(@CurrentUser() user: JwtPayload, @Body() dto: JoinByCodeDto) {
+    return this.catalogService.joinByInviteCode(user.sub, dto.inviteCode, dto.pin, dto.idempotencyKey);
   }
 
   @UseGuards(JwtAuthGuard)

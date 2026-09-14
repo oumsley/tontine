@@ -53,6 +53,7 @@ export interface SubscribeDto {
 
 export interface SubscriptionSummary {
   subscriptionId: string;
+  groupId: string;
   productName: string;
   description: string;
   theme: string | null;
@@ -65,6 +66,7 @@ export interface SubscriptionSummary {
   memberStatus: ContributionStatus;
   membersUpToDate: number;
   membersLate: number;
+  isOrganizerOfGroup: boolean;
 }
 
 export interface ContributionLine {

@@ -45,6 +45,7 @@ export class CatalogService {
     const products = await this.prisma.tontineProduct.findMany({
       where: {
         isActive: true,
+        visibility: "PUBLIC",
         ...(filters.theme ? { theme: filters.theme } : {}),
         ...(filters.minAmount !== undefined ? { contributionAmount: { gte: filters.minAmount } } : {}),
         ...(filters.maxAmount !== undefined ? { contributionAmount: { lte: filters.maxAmount } } : {}),
@@ -115,7 +116,7 @@ export class CatalogService {
     if (existing) {
       // Idempotent replay: subscribing twice with the same request just
       // returns the existing subscription instead of erroring.
-      return { ...(await this.buildSubscriptionSummary(existing.id)), firstContributionPaid: true };
+      return { ...(await this.buildSubscriptionSummary(existing.id, userId)), firstContributionPaid: true };
     }
 
     if (user.kycStatus !== "VERIFIED") throw new BadRequestException("Identité non vérifiée");
@@ -173,6 +174,7 @@ export class CatalogService {
         idempotencyKey,
         `${group.product.name} · ${group.label}`,
         { subscriptionId, cycleNumber: 1 },
+        group.walletId,
       );
       await this.markContributionPaid(firstContribution.id, txn);
       firstContributionPaid = true;
@@ -180,8 +182,19 @@ export class CatalogService {
       // Left unpaid; surfaced to the caller via firstContributionPaid.
     }
 
-    const summary = await this.buildSubscriptionSummary(subscriptionId);
+    const summary = await this.buildSubscriptionSummary(subscriptionId, userId);
     return { ...summary, firstContributionPaid };
+  }
+
+  async joinByInviteCode(
+    userId: string,
+    inviteCode: string,
+    pin: string,
+    idempotencyKey: string,
+  ): Promise<SubscriptionSummary & { firstContributionPaid: boolean }> {
+    const group = await this.prisma.tontineGroup.findUnique({ where: { inviteCode } });
+    if (!group) throw new NotFoundException("Code d'invitation invalide");
+    return this.subscribe(userId, group.id, pin, idempotencyKey);
   }
 
   async listMySubscriptions(userId: string): Promise<SubscriptionSummary[]> {
@@ -190,7 +203,7 @@ export class CatalogService {
       select: { id: true },
       orderBy: { subscribedAt: "desc" },
     });
-    return Promise.all(subscriptions.map((s) => this.buildSubscriptionSummary(s.id)));
+    return Promise.all(subscriptions.map((s) => this.buildSubscriptionSummary(s.id, userId)));
   }
 
   async getSubscriptionDetail(userId: string, subscriptionId: string): Promise<SubscriptionDetail> {
@@ -210,7 +223,7 @@ export class CatalogService {
       throw new NotFoundException("Souscription introuvable");
     }
 
-    const summary = await this.buildSubscriptionSummary(subscriptionId);
+    const summary = await this.buildSubscriptionSummary(subscriptionId, userId);
     const contributions: ContributionLine[] = subscription.contributions.map((c) => ({
       id: c.id,
       cycleNumber: c.cycleNumber,
@@ -256,6 +269,7 @@ export class CatalogService {
       idempotencyKey,
       `${group.product.name} · ${group.label}`,
       { subscriptionId: contribution.subscriptionId, cycleNumber: contribution.cycleNumber },
+      group.walletId,
     );
     const updated = await this.markContributionPaid(contribution.id, txn);
 
@@ -278,10 +292,12 @@ export class CatalogService {
   async createGroup(productId: string, dto: CreateGroupDto) {
     const product = await this.prisma.tontineProduct.findUnique({ where: { id: productId } });
     if (!product) throw new NotFoundException("Produit introuvable");
+    const wallet = await this.prisma.wallet.create({ data: {} });
     return this.prisma.tontineGroup.create({
       data: {
         productId,
         label: dto.label,
+        walletId: wallet.id,
         startedAt: dto.startedAt ? new Date(dto.startedAt) : new Date(),
       },
     });
@@ -326,7 +342,7 @@ export class CatalogService {
     });
   }
 
-  private async buildSubscriptionSummary(subscriptionId: string): Promise<SubscriptionSummary> {
+  private async buildSubscriptionSummary(subscriptionId: string, viewerUserId: string): Promise<SubscriptionSummary> {
     const subscription = await this.prisma.tontineSubscription.findUniqueOrThrow({
       where: { id: subscriptionId },
       include: {
@@ -348,6 +364,7 @@ export class CatalogService {
 
     return {
       subscriptionId: subscription.id,
+      groupId: subscription.groupId,
       productName: subscription.group.product.name,
       description: subscription.group.product.description,
       theme: subscription.group.product.theme,
@@ -360,6 +377,7 @@ export class CatalogService {
       memberStatus: this.overallMemberStatus(subscription.contributions),
       membersUpToDate: memberStatuses.length - membersLate,
       membersLate,
+      isOrganizerOfGroup: subscription.group.product.createdByUserId === viewerUserId,
     };
   }
 }
