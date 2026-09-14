@@ -16,6 +16,7 @@ const TYPE_LABEL: Record<TransactionType, string> = {
   [TransactionType.PAYMENT]: "Paiement",
   [TransactionType.AIRTIME_PURCHASE]: "Crédit & data",
   [TransactionType.TONTINE_CONTRIBUTION]: "Cotisation tontine",
+  [TransactionType.TONTINE_DISBURSEMENT]: "Décaissement tontine",
 };
 
 type Props = NativeStackScreenProps<MainStackParamList, "TransactionReceipt">;

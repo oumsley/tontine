@@ -18,10 +18,17 @@ const FREQUENCY_LABEL: Record<ContributionFrequency, string> = {
 
 type CategoryTab = "ALL" | TontineKind;
 
+const KIND_LABEL: Record<TontineKind, string> = {
+  [TontineKind.ARGENT]: "Argent",
+  [TontineKind.BIENS]: "Biens",
+  [TontineKind.PROJET]: "Projets",
+};
+
 const TABS: { key: CategoryTab; label: string }[] = [
   { key: "ALL", label: "Tout" },
-  { key: TontineKind.CLASSIQUE, label: "Argent" },
-  { key: TontineKind.PROJET, label: "Biens" },
+  { key: TontineKind.ARGENT, label: KIND_LABEL[TontineKind.ARGENT] },
+  { key: TontineKind.BIENS, label: KIND_LABEL[TontineKind.BIENS] },
+  { key: TontineKind.PROJET, label: KIND_LABEL[TontineKind.PROJET] },
 ];
 
 type Props = NativeStackScreenProps<MainStackParamList, "Offers">;
@@ -86,9 +93,7 @@ export function OffersScreen({ navigation }: Props) {
                   </View>
                 ) : (
                   <View style={styles.badgeOutline}>
-                    <Text style={styles.badgeOutlineLabel}>
-                      {product.kind === TontineKind.CLASSIQUE ? "Argent" : "Biens"}
-                    </Text>
+                    <Text style={styles.badgeOutlineLabel}>{KIND_LABEL[product.kind]}</Text>
                   </View>
                 )}
                 <Text style={typography.caption}>{product.availableSlots} place(s) restante(s)</Text>

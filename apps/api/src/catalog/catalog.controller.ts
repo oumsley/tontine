@@ -1,15 +1,15 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
-import type { ContributionLine, ProductDetail, ProductSummary, SubscriptionDetail, SubscriptionSummary } from "@bingmoney/shared";
+import type { ContributionLine, DisbursementSummary, ProductDetail, ProductSummary, SubscriptionDetail, SubscriptionSummary } from "@bingmoney/shared";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CatalogService } from "./catalog.service";
 import { SubscribeDto } from "./dto/subscribe.dto";
-import { JoinByCodeDto } from "./dto/join-by-code.dto";
 import { PayContributionDto } from "./dto/pay-contribution.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateGroupDto } from "./dto/create-group.dto";
+import { DisburseCycleDto } from "./dto/disburse-cycle.dto";
 
 @Controller("catalog")
 export class CatalogController {
@@ -44,12 +44,6 @@ export class CatalogController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post("join-by-code")
-  joinByCode(@CurrentUser() user: JwtPayload, @Body() dto: JoinByCodeDto) {
-    return this.catalogService.joinByInviteCode(user.sub, dto.inviteCode, dto.pin, dto.idempotencyKey);
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Get("subscriptions")
   listMySubscriptions(@CurrentUser() user: JwtPayload): Promise<SubscriptionSummary[]> {
     return this.catalogService.listMySubscriptions(user.sub);
@@ -81,5 +75,11 @@ export class CatalogController {
   @Post("products/:id/groups")
   createGroup(@Param("id") id: string, @Body() dto: CreateGroupDto) {
     return this.catalogService.createGroup(id, dto);
+  }
+
+  @UseGuards(AdminGuard)
+  @Post("groups/:id/disburse")
+  disburseCycle(@Param("id") id: string, @Body() dto: DisburseCycleDto): Promise<DisbursementSummary> {
+    return this.catalogService.disburseCycle(id, dto.cycleNumber);
   }
 }

@@ -1,5 +1,6 @@
 export enum TontineKind {
-  CLASSIQUE = "CLASSIQUE",
+  ARGENT = "ARGENT",
+  BIENS = "BIENS",
   PROJET = "PROJET",
 }
 
@@ -66,7 +67,6 @@ export interface SubscriptionSummary {
   memberStatus: ContributionStatus;
   membersUpToDate: number;
   membersLate: number;
-  isOrganizerOfGroup: boolean;
 }
 
 export interface ContributionLine {
@@ -92,4 +92,17 @@ export interface SubscriptionDetail extends SubscriptionSummary {
 export interface PayContributionDto {
   pin: string;
   idempotencyKey: string;
+}
+
+// Back-office only: BingMoney pilots every disbursement per the offer's
+// calendar, there is no client-side validation step (Cahier V4, règle 16).
+export interface DisburseCycleDto {
+  cycleNumber: number;
+}
+
+export interface DisbursementSummary {
+  transactionId: string;
+  beneficiaryUserId: string;
+  cycleNumber: number;
+  amount: number;
 }

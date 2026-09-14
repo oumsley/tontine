@@ -11,6 +11,5 @@ export interface UserSummary {
   fullName: string | null;
   kycStatus: KycStatus;
   trustScore: number;
-  isOrganizer: boolean;
   createdAt: string;
 }

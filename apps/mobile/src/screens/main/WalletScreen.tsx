@@ -94,6 +94,8 @@ export function txnLabel(txn: TransactionSummary): string {
       return `Crédit · ${txn.counterpartyLabel ?? ""}`;
     case TransactionType.TONTINE_CONTRIBUTION:
       return `Cotisation · ${txn.counterpartyLabel ?? "Tontine"}`;
+    case TransactionType.TONTINE_DISBURSEMENT:
+      return `Décaissement · ${txn.counterpartyLabel ?? "Tontine"}`;
     default:
       return "Transaction";
   }
@@ -193,6 +195,8 @@ export function TxTypeIcon({ type }: { type: TransactionType }) {
       return <WithdrawIcon />;
     case TransactionType.AIRTIME_PURCHASE:
       return <PhoneIcon />;
+    case TransactionType.TONTINE_DISBURSEMENT:
+      return <ReceiveIcon />;
     case TransactionType.PAYMENT:
     default:
       return (

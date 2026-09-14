@@ -4,6 +4,7 @@ import {
   ContributionStatus,
   TontineKind,
   type ContributionLine,
+  type DisbursementSummary,
   type MemberStatusLine,
   type ProductDetail,
   type ProductSummary,
@@ -45,7 +46,6 @@ export class CatalogService {
     const products = await this.prisma.tontineProduct.findMany({
       where: {
         isActive: true,
-        visibility: "PUBLIC",
         ...(filters.theme ? { theme: filters.theme } : {}),
         ...(filters.minAmount !== undefined ? { contributionAmount: { gte: filters.minAmount } } : {}),
         ...(filters.maxAmount !== undefined ? { contributionAmount: { lte: filters.maxAmount } } : {}),
@@ -116,7 +116,7 @@ export class CatalogService {
     if (existing) {
       // Idempotent replay: subscribing twice with the same request just
       // returns the existing subscription instead of erroring.
-      return { ...(await this.buildSubscriptionSummary(existing.id, userId)), firstContributionPaid: true };
+      return { ...(await this.buildSubscriptionSummary(existing.id)), firstContributionPaid: true };
     }
 
     if (user.kycStatus !== "VERIFIED") throw new BadRequestException("Identité non vérifiée");
@@ -182,19 +182,8 @@ export class CatalogService {
       // Left unpaid; surfaced to the caller via firstContributionPaid.
     }
 
-    const summary = await this.buildSubscriptionSummary(subscriptionId, userId);
+    const summary = await this.buildSubscriptionSummary(subscriptionId);
     return { ...summary, firstContributionPaid };
-  }
-
-  async joinByInviteCode(
-    userId: string,
-    inviteCode: string,
-    pin: string,
-    idempotencyKey: string,
-  ): Promise<SubscriptionSummary & { firstContributionPaid: boolean }> {
-    const group = await this.prisma.tontineGroup.findUnique({ where: { inviteCode } });
-    if (!group) throw new NotFoundException("Code d'invitation invalide");
-    return this.subscribe(userId, group.id, pin, idempotencyKey);
   }
 
   async listMySubscriptions(userId: string): Promise<SubscriptionSummary[]> {
@@ -203,7 +192,7 @@ export class CatalogService {
       select: { id: true },
       orderBy: { subscribedAt: "desc" },
     });
-    return Promise.all(subscriptions.map((s) => this.buildSubscriptionSummary(s.id, userId)));
+    return Promise.all(subscriptions.map((s) => this.buildSubscriptionSummary(s.id)));
   }
 
   async getSubscriptionDetail(userId: string, subscriptionId: string): Promise<SubscriptionDetail> {
@@ -223,7 +212,7 @@ export class CatalogService {
       throw new NotFoundException("Souscription introuvable");
     }
 
-    const summary = await this.buildSubscriptionSummary(subscriptionId, userId);
+    const summary = await this.buildSubscriptionSummary(subscriptionId);
     const contributions: ContributionLine[] = subscription.contributions.map((c) => ({
       id: c.id,
       cycleNumber: c.cycleNumber,
@@ -303,6 +292,39 @@ export class CatalogService {
     });
   }
 
+  // Décaissement piloté par BingMoney (Cahier V4, règle 16) : pas de
+  // validation communautaire — l'équipe déclenche le paiement du pot vers
+  // le bénéficiaire du cycle depuis le back-office. L'idempotencyKey dérivée
+  // du cycle rend l'appel sûr à rejouer sans jamais payer deux fois.
+  async disburseCycle(groupId: string, cycleNumber: number): Promise<DisbursementSummary> {
+    const group = await this.prisma.tontineGroup.findUnique({
+      where: { id: groupId },
+      include: { product: true, subscriptions: { include: { contributions: true } } },
+    });
+    if (!group) throw new NotFoundException("Groupe introuvable");
+
+    const beneficiary = group.subscriptions.find((s) => s.turnNumber === cycleNumber);
+    if (!beneficiary) throw new BadRequestException("Aucun bénéficiaire pour ce cycle");
+
+    const amount = group.subscriptions.reduce(
+      (sum, sub) =>
+        sum + sub.contributions.filter((c) => c.cycleNumber === cycleNumber && c.paidAt).reduce((s, c) => s + c.amount, 0),
+      0,
+    );
+    if (amount <= 0) throw new BadRequestException("Aucune cotisation payée pour ce cycle");
+
+    const txn = await this.walletService.disburseTontine(
+      group.walletId,
+      beneficiary.userId,
+      amount,
+      `disbursement-${groupId}-${cycleNumber}`,
+      `${group.product.name} · ${group.label}`,
+      { groupId, cycleNumber },
+    );
+
+    return { transactionId: txn.id, beneficiaryUserId: beneficiary.userId, cycleNumber, amount };
+  }
+
   // --- helpers ---
 
   private toProductSummary(product: ProductWithGroups): ProductSummary {
@@ -342,7 +364,7 @@ export class CatalogService {
     });
   }
 
-  private async buildSubscriptionSummary(subscriptionId: string, viewerUserId: string): Promise<SubscriptionSummary> {
+  private async buildSubscriptionSummary(subscriptionId: string): Promise<SubscriptionSummary> {
     const subscription = await this.prisma.tontineSubscription.findUniqueOrThrow({
       where: { id: subscriptionId },
       include: {
@@ -377,7 +399,6 @@ export class CatalogService {
       memberStatus: this.overallMemberStatus(subscription.contributions),
       membersUpToDate: memberStatuses.length - membersLate,
       membersLate,
-      isOrganizerOfGroup: subscription.group.product.createdByUserId === viewerUserId,
     };
   }
 }

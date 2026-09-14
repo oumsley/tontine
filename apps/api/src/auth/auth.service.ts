@@ -88,7 +88,6 @@ export class AuthService {
       fullName: user.fullName,
       kycStatus: user.kycStatus as UserSummary["kycStatus"],
       trustScore: user.trustScore,
-      isOrganizer: user.isOrganizer,
       createdAt: user.createdAt.toISOString(),
     };
   }

@@ -242,6 +242,54 @@ describe("Catalog (e2e)", () => {
       .send({ pin: "1111", idempotencyKey: randomUUID() })
       .expect(400);
   });
+
+  it("lets the back-office disburse a cycle's pot to its beneficiary — no client-side validation", async () => {
+    // Cycle 1: both A (turn 1, beneficiary) and B (turn 2) paid their first
+    // contribution at subscribe time, so the pot holds 5000 + 5000.
+    const res = await request(app.getHttpServer())
+      .post(`/catalog/groups/${groupId}/disburse`)
+      .set("x-admin-key", "dev-admin-key")
+      .send({ cycleNumber: 1 })
+      .expect(201);
+    expect(res.body.amount).toBe(10000);
+    expect(res.body.cycleNumber).toBe(1);
+    expect(res.body.beneficiaryUserId).toBe(users.a.id);
+
+    const walletRes = await request(app.getHttpServer())
+      .get("/wallet")
+      .set("Authorization", `Bearer ${users.a.accessToken}`)
+      .expect(200);
+    expect(walletRes.body.balance).toBe(20000); // 10000 after contributions + 10000 payout
+
+    // Replaying the same disbursement never pays twice — same underlying
+    // idempotency key as any other ledger-affecting operation.
+    await request(app.getHttpServer())
+      .post(`/catalog/groups/${groupId}/disburse`)
+      .set("x-admin-key", "dev-admin-key")
+      .send({ cycleNumber: 1 })
+      .expect(201);
+
+    const walletAfterReplay = await request(app.getHttpServer())
+      .get("/wallet")
+      .set("Authorization", `Bearer ${users.a.accessToken}`)
+      .expect(200);
+    expect(walletAfterReplay.body.balance).toBe(20000);
+  });
+
+  it("rejects disbursing a cycle without a beneficiary", async () => {
+    await request(app.getHttpServer())
+      .post(`/catalog/groups/${groupId}/disburse`)
+      .set("x-admin-key", "dev-admin-key")
+      .send({ cycleNumber: 99 })
+      .expect(400);
+  });
+
+  it("requires admin credentials to disburse", async () => {
+    await request(app.getHttpServer())
+      .post(`/catalog/groups/${groupId}/disburse`)
+      .send({ cycleNumber: 1 })
+      .expect(401);
+  });
 });
 
 function decodeJwt(token: string): { sub: string } {
