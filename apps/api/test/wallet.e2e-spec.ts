@@ -48,6 +48,7 @@ describe("Wallet (e2e)", () => {
     await prisma.session.deleteMany({});
     await prisma.otpCode.deleteMany({});
     await prisma.wallet.deleteMany({ where: { userId: { in: [userA.id, userB.id] } } });
+    await prisma.notification.deleteMany({ where: { userId: { in: [userA.id, userB.id] } } });
     await prisma.user.deleteMany({ where: { phoneNumber: { in: [phoneA, phoneB] } } });
     await app.close();
   });

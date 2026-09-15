@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { Prisma } from "@prisma/client";
 import {
   LedgerDirection,
+  NotificationType,
   PaymentMethod,
   TransactionType,
   type TransactionSummary,
@@ -9,6 +10,7 @@ import {
 } from "@bingmoney/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthService } from "../auth/auth.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 type Tx = Prisma.TransactionClient;
 
@@ -17,6 +19,7 @@ export class WalletService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getOrCreateWallet(userId: string) {
@@ -78,7 +81,7 @@ export class WalletService {
     if (recipient.id === userId) throw new BadRequestException("Impossible de vous transférer à vous-même");
     const recipientWallet = await this.getOrCreateWallet(recipient.id);
 
-    return this.runIdempotentTransaction({
+    const result = await this.runIdempotentTransaction({
       idempotencyKey,
       type: TransactionType.TRANSFER,
       amount,
@@ -90,6 +93,17 @@ export class WalletService {
         await this.postEntry(tx, recipientWallet.id, LedgerDirection.CREDIT, amount, transactionId);
       },
     });
+
+    await this.notificationsService.notify({
+      userId: recipient.id,
+      type: NotificationType.TRANSFER_RECEIVED,
+      title: "Transfert reçu",
+      body: `Vous avez reçu ${amount} FCFA.`,
+      dedupeKey: `TRANSFER_RECEIVED:${result.id}`,
+      metadata: { transactionId: result.id },
+    });
+
+    return result;
   }
 
   async withdraw(userId: string, amount: number, method: PaymentMethod, pin: string, idempotencyKey: string) {
@@ -120,7 +134,7 @@ export class WalletService {
       throw new BadRequestException("Impossible de vous payer vous-même");
     }
 
-    return this.runIdempotentTransaction({
+    const result = await this.runIdempotentTransaction({
       idempotencyKey,
       type: TransactionType.PAYMENT,
       amount,
@@ -132,6 +146,17 @@ export class WalletService {
         await this.postEntry(tx, merchant.walletId, LedgerDirection.CREDIT, amount, transactionId);
       },
     });
+
+    await this.notificationsService.notify({
+      userId,
+      type: NotificationType.QR_PAYMENT_VALIDATED,
+      title: "Paiement QR validé",
+      body: `Votre paiement de ${amount} FCFA à ${merchant.displayName} a été validé.`,
+      dedupeKey: `QR_PAYMENT_VALIDATED:${result.id}`,
+      metadata: { transactionId: result.id },
+    });
+
+    return result;
   }
 
   async buyAirtime(

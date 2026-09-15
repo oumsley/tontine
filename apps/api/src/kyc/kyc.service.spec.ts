@@ -4,6 +4,7 @@ import { KycStatus } from "@bingmoney/shared";
 import { KycService } from "./kyc.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { KycStorageService } from "./storage/kyc-storage.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 describe("KycService", () => {
   let service: KycService;
@@ -12,6 +13,7 @@ describe("KycService", () => {
     kycDocument: Record<string, jest.Mock>;
   };
   let storage: { saveDocument: jest.Mock };
+  let notifications: { notify: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -19,12 +21,14 @@ describe("KycService", () => {
       kycDocument: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     };
     storage = { saveDocument: jest.fn().mockResolvedValue("/uploads/kyc/user-1/file.jpg") };
+    notifications = { notify: jest.fn().mockResolvedValue(true) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         KycService,
         { provide: PrismaService, useValue: prisma },
         { provide: KycStorageService, useValue: storage },
+        { provide: NotificationsService, useValue: notifications },
       ],
     }).compile();
 
@@ -101,9 +105,10 @@ describe("KycService", () => {
         data: { kycStatus: KycStatus.VERIFIED, trustScore: 60 },
       });
       expect(result.status).toBe(KycStatus.VERIFIED);
+      expect(notifications.notify).not.toHaveBeenCalled();
     });
 
-    it("records a rejection reason", async () => {
+    it("records a rejection reason and notifies the user an action is required", async () => {
       prisma.kycDocument.findFirst.mockResolvedValue({
         id: "doc-1",
         submittedAt: new Date("2026-01-01T00:00:00Z"),
@@ -114,6 +119,9 @@ describe("KycService", () => {
       const result = await service.review("user-1", KycStatus.REJECTED, "Photo illisible");
 
       expect(result.rejectionReason).toBe("Photo illisible");
+      expect(notifications.notify).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user-1", type: "KYC_ACTION_REQUIRED" }),
+      );
     });
   });
 });

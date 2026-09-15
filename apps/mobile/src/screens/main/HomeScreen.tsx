@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
 import {
   LedgerDirection,
@@ -15,6 +15,7 @@ import { formatAmount } from "@/utils/formatCurrency";
 import { walletApi } from "@/api/wallet";
 import { catalogApi } from "@/api/catalog";
 import { authApi } from "@/api/auth";
+import { notificationsApi } from "@/api/notifications";
 import { txnLabel, TxTypeIcon } from "./WalletScreen";
 import { MainStackParamList } from "@/navigation/MainNavigator";
 import { useMainNav } from "./useMainNav";
@@ -34,6 +35,7 @@ export function HomeScreen({ navigation }: Props) {
   const [balanceHidden, setBalanceHidden] = useState(false);
   const [subscriptions, setSubscriptions] = useState<SubscriptionSummary[]>([]);
   const [recentActivity, setRecentActivity] = useState<TransactionSummary[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,6 +51,9 @@ export function HomeScreen({ navigation }: Props) {
       });
       catalogApi.listMySubscriptions().then((res) => {
         if (!cancelled) setSubscriptions(res);
+      });
+      notificationsApi.unreadCount().then((res) => {
+        if (!cancelled) setUnreadNotifications(res.count);
       });
       return () => {
         cancelled = true;
@@ -73,7 +78,7 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={typography.title}>{profile?.fullName ?? "Bienvenue"} 👋</Text>
         </View>
         <Pressable
-          onPress={() => Alert.alert("Notifications", "Aucune nouvelle notification pour le moment.")}
+          onPress={() => navigation.navigate("Notifications")}
           accessibilityLabel="Notifications"
           style={styles.notifButton}
         >
@@ -81,6 +86,7 @@ export function HomeScreen({ navigation }: Props) {
             <Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <Path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </Svg>
+          {unreadNotifications > 0 ? <View style={styles.notifBadge} /> : null}
         </Pressable>
       </View>
 
@@ -286,6 +292,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+  notifBadge: {
+    position: "absolute",
+    top: 9,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.danger,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
   },
   balanceCard: {
     backgroundColor: colors.accentDark,

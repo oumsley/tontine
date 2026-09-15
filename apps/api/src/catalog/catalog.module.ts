@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
 import { WalletModule } from "../wallet/wallet.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { CatalogController } from "./catalog.controller";
 import { CatalogService } from "./catalog.service";
 
 @Module({
-  imports: [WalletModule],
+  imports: [WalletModule, NotificationsModule],
   controllers: [CatalogController],
   providers: [CatalogService],
 })

@@ -110,6 +110,7 @@ describe("Catalog (e2e)", () => {
     await prisma.session.deleteMany({});
     await prisma.otpCode.deleteMany({});
     const ids = Object.values(users).map((u) => u.id);
+    await prisma.notification.deleteMany({ where: { userId: { in: ids } } });
     await prisma.kycDocument.deleteMany({ where: { userId: { in: ids } } });
     await prisma.wallet.deleteMany({ where: { userId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });

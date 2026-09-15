@@ -80,6 +80,10 @@ export interface ContributionLine {
   cycleNumber: number;
   dueDate: string;
   amount: number;
+  // Live-computed while unpaid (0 before the grace deadline passes),
+  // frozen to what was actually charged once paidAt is set.
+  penaltyAmount: number;
+  totalDue: number;
   paidAt: string | null;
   status: ContributionStatus;
 }

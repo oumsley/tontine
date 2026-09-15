@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   ContributionFrequency,
   ContributionStatus,
+  NotificationType,
   TontineKind,
   type ContributionLine,
   type DisbursementSummary,
@@ -14,6 +15,7 @@ import {
 } from "@bingmoney/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { addIntervals } from "./frequency.util";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateGroupDto } from "./dto/create-group.dto";
@@ -35,6 +37,7 @@ export class CatalogService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async listProducts(filters: {
@@ -188,6 +191,15 @@ export class CatalogService {
       // Left unpaid; surfaced to the caller via firstContributionPaid.
     }
 
+    await this.notificationsService.notify({
+      userId,
+      type: NotificationType.ADHESION_CONFIRMED,
+      title: "Adhésion confirmée",
+      body: `Votre adhésion à ${group.product.name} est confirmée.`,
+      dedupeKey: `ADHESION_CONFIRMED:${subscriptionId}`,
+      metadata: { subscriptionId },
+    });
+
     const summary = await this.buildSubscriptionSummary(subscriptionId);
     return { ...summary, firstContributionPaid };
   }
@@ -218,22 +230,29 @@ export class CatalogService {
       throw new NotFoundException("Souscription introuvable");
     }
 
+    const { lateGracePeriodDays: graceDays, latePenaltyRateBps: penaltyRateBps } = subscription.group.product;
+
     const summary = await this.buildSubscriptionSummary(subscriptionId);
-    const contributions: ContributionLine[] = subscription.contributions.map((c) => ({
-      id: c.id,
-      cycleNumber: c.cycleNumber,
-      dueDate: c.dueDate.toISOString(),
-      amount: c.amount,
-      paidAt: c.paidAt?.toISOString() ?? null,
-      status: this.contributionStatus(c.paidAt, c.dueDate),
-    }));
+    const contributions: ContributionLine[] = subscription.contributions.map((c) => {
+      const penaltyAmount = c.paidAt ? c.penaltyApplied : this.computePenalty(c.amount, c.dueDate, graceDays, penaltyRateBps);
+      return {
+        id: c.id,
+        cycleNumber: c.cycleNumber,
+        dueDate: c.dueDate.toISOString(),
+        amount: c.amount,
+        penaltyAmount,
+        totalDue: c.amount + penaltyAmount,
+        paidAt: c.paidAt?.toISOString() ?? null,
+        status: this.contributionStatus(c.paidAt, c.dueDate, graceDays),
+      };
+    });
 
     const members: MemberStatusLine[] = subscription.group.subscriptions
       .sort((a, b) => a.turnNumber - b.turnNumber)
       .map((member) => ({
         turnNumber: member.turnNumber,
         isYou: member.userId === userId,
-        status: this.overallMemberStatus(member.contributions),
+        status: this.overallMemberStatus(member.contributions, graceDays),
       }));
 
     return { ...summary, contributions, members };
@@ -257,24 +276,32 @@ export class CatalogService {
     }
 
     const { group } = contribution.subscription;
+    const penalty = this.computePenalty(
+      contribution.amount,
+      contribution.dueDate,
+      group.product.lateGracePeriodDays,
+      group.product.latePenaltyRateBps,
+    );
     const txn = await this.walletService.contributeToTontine(
       userId,
-      contribution.amount,
+      contribution.amount + penalty,
       pin,
       idempotencyKey,
       `${group.product.name} · ${group.label}`,
-      { subscriptionId: contribution.subscriptionId, cycleNumber: contribution.cycleNumber },
+      { subscriptionId: contribution.subscriptionId, cycleNumber: contribution.cycleNumber, penalty },
       group.walletId,
     );
-    const updated = await this.markContributionPaid(contribution.id, txn);
+    const updated = await this.markContributionPaid(contribution.id, txn, penalty);
 
     return {
       id: updated.id,
       cycleNumber: updated.cycleNumber,
       dueDate: updated.dueDate.toISOString(),
       amount: updated.amount,
+      penaltyAmount: updated.penaltyApplied,
+      totalDue: updated.amount + updated.penaltyApplied,
       paidAt: updated.paidAt?.toISOString() ?? null,
-      status: this.contributionStatus(updated.paidAt, updated.dueDate),
+      status: this.contributionStatus(updated.paidAt, updated.dueDate, group.product.lateGracePeriodDays),
     };
   }
 
@@ -328,6 +355,18 @@ export class CatalogService {
       { groupId, cycleNumber },
     );
 
+    const isGoods = group.product.kind === TontineKind.BIENS;
+    await this.notificationsService.notify({
+      userId: beneficiary.userId,
+      type: isGoods ? NotificationType.GOODS_READY : NotificationType.DISBURSEMENT_RECEIVED,
+      title: isGoods ? "Bien disponible" : "Décaissement reçu",
+      body: isGoods
+        ? `Votre bien est prêt selon les conditions de ${group.product.name}.`
+        : `Votre décaissement de ${amount} FCFA pour ${group.product.name} a été effectué.`,
+      dedupeKey: `DISBURSEMENT:${groupId}:${cycleNumber}`,
+      metadata: { groupId, cycleNumber, transactionId: txn.id },
+    });
+
     return { transactionId: txn.id, beneficiaryUserId: beneficiary.userId, cycleNumber, amount };
   }
 
@@ -351,22 +390,41 @@ export class CatalogService {
     };
   }
 
-  private contributionStatus(paidAt: Date | null, dueDate: Date): ContributionStatus {
-    if (paidAt) return ContributionStatus.PAID;
-    return dueDate.getTime() < Date.now() ? ContributionStatus.LATE : ContributionStatus.UPCOMING;
+  // A contribution only becomes LATE once its grace period has elapsed —
+  // lateGracePeriodDays existed on the offer but was never actually applied
+  // before, so "En retard" fired the instant dueDate passed regardless.
+  private isPastGrace(dueDate: Date, graceDays: number): boolean {
+    return Date.now() > dueDate.getTime() + graceDays * 24 * 60 * 60 * 1000;
   }
 
-  private overallMemberStatus(contributions: { paidAt: Date | null; dueDate: Date }[]): ContributionStatus {
-    const hasLate = contributions.some((c) => this.contributionStatus(c.paidAt, c.dueDate) === ContributionStatus.LATE);
+  private contributionStatus(paidAt: Date | null, dueDate: Date, graceDays: number): ContributionStatus {
+    if (paidAt) return ContributionStatus.PAID;
+    return this.isPastGrace(dueDate, graceDays) ? ContributionStatus.LATE : ContributionStatus.UPCOMING;
+  }
+
+  // The penalty (basis points of the contribution amount) only kicks in
+  // once the grace period has elapsed — never charged for a contribution
+  // paid on time or within the grace window.
+  private computePenalty(amount: number, dueDate: Date, graceDays: number, penaltyRateBps: number): number {
+    return this.isPastGrace(dueDate, graceDays) ? Math.round((amount * penaltyRateBps) / 10000) : 0;
+  }
+
+  private overallMemberStatus(
+    contributions: { paidAt: Date | null; dueDate: Date }[],
+    graceDays: number,
+  ): ContributionStatus {
+    const hasLate = contributions.some(
+      (c) => this.contributionStatus(c.paidAt, c.dueDate, graceDays) === ContributionStatus.LATE,
+    );
     if (hasLate) return ContributionStatus.LATE;
     const allPaid = contributions.every((c) => c.paidAt);
     return allPaid ? ContributionStatus.PAID : ContributionStatus.UPCOMING;
   }
 
-  private async markContributionPaid(contributionId: string, txn: TransactionSummary) {
+  private async markContributionPaid(contributionId: string, txn: TransactionSummary, penaltyApplied = 0) {
     return this.prisma.tontineContribution.update({
       where: { id: contributionId },
-      data: { paidAt: new Date(), transactionId: txn.id },
+      data: { paidAt: new Date(), transactionId: txn.id, penaltyApplied },
     });
   }
 
@@ -384,10 +442,12 @@ export class CatalogService {
       },
     });
 
+    const { lateGracePeriodDays: graceDays, latePenaltyRateBps: penaltyRateBps } = subscription.group.product;
+
     const nextDue = subscription.contributions.find((c) => !c.paidAt);
     const currentCycle = subscription.contributions.filter((c) => c.dueDate.getTime() <= Date.now()).length;
 
-    const memberStatuses = subscription.group.subscriptions.map((m) => this.overallMemberStatus(m.contributions));
+    const memberStatuses = subscription.group.subscriptions.map((m) => this.overallMemberStatus(m.contributions, graceDays));
     const membersLate = memberStatuses.filter((s) => s === ContributionStatus.LATE).length;
 
     return {
@@ -401,8 +461,8 @@ export class CatalogService {
       totalSlots: subscription.group.product.totalSlots,
       currentCycle: Math.max(1, Math.min(currentCycle, subscription.group.product.totalSlots)),
       nextDueDate: nextDue?.dueDate.toISOString() ?? null,
-      nextDueAmount: nextDue?.amount ?? null,
-      memberStatus: this.overallMemberStatus(subscription.contributions),
+      nextDueAmount: nextDue ? nextDue.amount + this.computePenalty(nextDue.amount, nextDue.dueDate, graceDays, penaltyRateBps) : null,
+      memberStatus: this.overallMemberStatus(subscription.contributions, graceDays),
       membersUpToDate: memberStatuses.length - membersLate,
       membersLate,
     };

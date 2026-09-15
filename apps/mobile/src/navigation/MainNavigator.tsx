@@ -18,6 +18,7 @@ import { OffersScreen } from "@/screens/main/OffersScreen";
 import { ProductDetailScreen } from "@/screens/main/ProductDetailScreen";
 import { SubscriptionTermsScreen } from "@/screens/main/SubscriptionTermsScreen";
 import { TontineTrackingScreen } from "@/screens/main/TontineTrackingScreen";
+import { NotificationsScreen } from "@/screens/main/NotificationsScreen";
 import { WalletIntent } from "./walletIntents";
 
 export type MainStackParamList = {
@@ -43,6 +44,7 @@ export type MainStackParamList = {
   ProductDetail: { productId: string };
   SubscriptionTerms: { productId: string };
   TontineTracking: { subscriptionId: string };
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -68,6 +70,7 @@ export function MainNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="SubscriptionTerms" component={SubscriptionTermsScreen} />
       <Stack.Screen name="TontineTracking" component={TontineTrackingScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

@@ -33,6 +33,40 @@ model User {
   wallet           Wallet?
   initiatedTxns    Transaction[]
   subscriptions    TontineSubscription[]
+  notifications    Notification[]
+}
+
+enum NotificationType {
+  ADHESION_CONFIRMED
+  DUE_SOON
+  DUE_TODAY
+  LATE
+  TURN_APPROACHING
+  DISBURSEMENT_RECEIVED
+  GOODS_READY
+  TRANSFER_RECEIVED
+  QR_PAYMENT_VALIDATED
+  KYC_ACTION_REQUIRED
+}
+
+// Cahier des charges V4 §18 (table "Événement / Exemple") + §15 ("rappel
+// avant/à échéance", "relances graduées"). dedupeKey makes emission
+// idempotent — the same underlying event (or the same day's reminder
+// scan) never creates a duplicate row; callers catch the unique
+// violation and treat it as a no-op, same pattern as ledger idempotency.
+model Notification {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  metadata  Json?
+  dedupeKey String            @unique
+  readAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model OtpCode {
@@ -257,6 +291,10 @@ model TontineContribution {
   amount         Int
   paidAt         DateTime?
   transactionId  String?
+  // What was actually charged on top of `amount` at payment time (0 when
+  // paid on time or within the grace period) — frozen for history even if
+  // the offer's penalty rate changes later.
+  penaltyApplied Int                 @default(0)
 
   @@unique([subscriptionId, cycleNumber])
   @@index([subscriptionId])

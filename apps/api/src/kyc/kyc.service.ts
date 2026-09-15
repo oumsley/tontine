@@ -1,13 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { KycStatus, type KycStatusResponse } from "@bingmoney/shared";
+import { KycStatus, NotificationType, type KycStatusResponse } from "@bingmoney/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { KycStorageService } from "./storage/kyc-storage.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 @Injectable()
 export class KycService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: KycStorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async submit(
@@ -90,6 +92,17 @@ export class KycService {
       // Placeholder trust score pending Module 4's full 5-dimension engine.
       data: { kycStatus: status, trustScore: status === KycStatus.VERIFIED ? 60 : 0 },
     });
+
+    if (status === KycStatus.REJECTED) {
+      await this.notificationsService.notify({
+        userId,
+        type: NotificationType.KYC_ACTION_REQUIRED,
+        title: "Vérification à finaliser",
+        body: "Une action est requise pour finaliser votre vérification d'identité.",
+        dedupeKey: `KYC_ACTION_REQUIRED:${document.id}`,
+        metadata: { kycDocumentId: document.id },
+      });
+    }
 
     return {
       status,

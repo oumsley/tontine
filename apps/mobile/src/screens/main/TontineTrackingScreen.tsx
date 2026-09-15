@@ -74,7 +74,12 @@ export function TontineTrackingScreen({ navigation, route }: Props) {
       {nextDue ? (
         <Card>
           <Text style={typography.label}>Prochaine échéance</Text>
-          <Text style={styles.dueAmount}>{formatAmount(nextDue.amount)} FCFA</Text>
+          <Text style={styles.dueAmount}>{formatAmount(nextDue.totalDue)} FCFA</Text>
+          {nextDue.penaltyAmount > 0 ? (
+            <Text style={styles.penaltyNote}>
+              Dont {formatAmount(nextDue.penaltyAmount)} F de pénalité de retard
+            </Text>
+          ) : null}
           <Text style={typography.bodySoft}>
             {nextDue.status === ContributionStatus.LATE ? "En retard depuis le " : "Attendue le "}
             {new Date(nextDue.dueDate).toLocaleDateString("fr-FR")}
@@ -83,7 +88,7 @@ export function TontineTrackingScreen({ navigation, route }: Props) {
             label="Payer maintenant"
             onPress={() =>
               navigation.navigate("SecurityAuth", {
-                intent: { kind: "PAY_CONTRIBUTION", contributionId: nextDue.id, amount: nextDue.amount },
+                intent: { kind: "PAY_CONTRIBUTION", contributionId: nextDue.id, amount: nextDue.totalDue },
                 targetLabel: `${detail.productName} · Tour ${detail.currentCycle}`,
                 returnTo: "Home",
               })
@@ -105,7 +110,10 @@ export function TontineTrackingScreen({ navigation, route }: Props) {
               <Text style={typography.caption}>{new Date(c.dueDate).toLocaleDateString("fr-FR")}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={typography.body}>{formatAmount(c.amount)} F</Text>
+              <Text style={typography.body}>{formatAmount(c.totalDue)} F</Text>
+              {c.penaltyAmount > 0 ? (
+                <Text style={styles.penaltyNoteSmall}>dont {formatAmount(c.penaltyAmount)} F pénalité</Text>
+              ) : null}
               <StatusBadge status={c.status} />
             </View>
           </View>
@@ -180,6 +188,8 @@ const styles = StyleSheet.create({
   },
   summaryValue: { fontSize: 16, fontWeight: "800", color: colors.ink },
   dueAmount: { fontSize: 26, fontWeight: "800", color: colors.ink, letterSpacing: -0.5 },
+  penaltyNote: { fontSize: 12.5, fontWeight: "600", color: colors.danger },
+  penaltyNoteSmall: { fontSize: 11, fontWeight: "600", color: colors.danger },
   list: {
     backgroundColor: colors.surface,
     borderWidth: 1,
