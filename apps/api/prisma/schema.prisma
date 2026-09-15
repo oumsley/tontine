@@ -193,6 +193,12 @@ model TontineProduct {
   minTrustScore       Int                   @default(0)
   lateGracePeriodDays Int
   latePenaltyRateBps  Int // basis points (1/100 of a percent), e.g. 200 = 2%
+  // Free-text policy blurbs the back-office fills in per offer (Cahier V4
+  // §6.3/§14.11: "les règles de sortie, remplacement... sont documentées
+  // dans chaque offre"). Optional so existing offers keep working as-is.
+  exitPolicy          String?
+  replacementPolicy   String?
+  feesNote            String?
   isActive            Boolean               @default(true)
   createdAt           DateTime              @default(now())
 

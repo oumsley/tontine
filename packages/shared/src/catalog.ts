@@ -37,6 +37,12 @@ export interface ProductDetail extends ProductSummary {
     eligible: boolean;
     reasons: string[];
   };
+  // "Ce que je reçois" / "quand" — Cahier V4 §6.3.
+  expectedReceiveAmount: number;
+  receptionTiming: string;
+  exitPolicy: string | null;
+  replacementPolicy: string | null;
+  feesNote: string | null;
 }
 
 export interface CatalogFilters {

@@ -30,7 +30,7 @@ function actionCopy(intent: WalletIntent, targetLabel: string): { title: string;
     case "AIRTIME":
       return { title: "Crédit envoyé", subtitle: `${amount} envoyés au ${targetLabel}.` };
     case "SUBSCRIBE":
-      return { title: "Souscription confirmée", subtitle: `Vous avez rejoint ${targetLabel}.` };
+      return { title: "Adhésion confirmée", subtitle: `Vous avez rejoint ${targetLabel}.` };
     case "PAY_CONTRIBUTION":
       return { title: "Cotisation payée", subtitle: `${amount} réglés pour ${targetLabel}.` };
   }

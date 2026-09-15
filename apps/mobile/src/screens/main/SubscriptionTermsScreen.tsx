@@ -57,12 +57,12 @@ export function SubscriptionTermsScreen({ navigation, route }: Props) {
     <ScreenContainer
       footer={
         <View style={{ padding: spacing.xl }}>
-          <Button label="Confirmer la souscription" onPress={handleConfirm} disabled={!accepted} />
+          <Button label="Confirmer l'adhésion" onPress={handleConfirm} disabled={!accepted} />
         </View>
       }
     >
       <BackButton onPress={() => navigation.goBack()} />
-      <Text style={typography.title}>Conditions de souscription</Text>
+      <Text style={typography.title}>Conditions d'adhésion</Text>
       <Text style={typography.bodySoft}>
         Relisez attentivement les conditions de "{product.name}" avant de confirmer.
       </Text>

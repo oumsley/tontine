@@ -35,7 +35,7 @@ export function MyTontinesScreen({ navigation }: Props) {
         <View style={styles.emptyState}>
           <Text style={typography.body}>Aucune tontine pour le moment</Text>
           <Text style={[typography.caption, { textAlign: "center" }]}>
-            Parcourez les offres pour souscrire à un groupe BingMoney.
+            Parcourez les offres pour adhérer à un groupe BingMoney.
           </Text>
           <Button label="Voir les offres" variant="secondary" onPress={() => navigation.navigate("Offers")} />
         </View>

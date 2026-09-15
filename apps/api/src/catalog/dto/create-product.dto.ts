@@ -39,4 +39,16 @@ export class CreateProductDto {
   @IsInt()
   @Min(0)
   latePenaltyRateBps!: number;
+
+  @IsOptional()
+  @IsString()
+  exitPolicy?: string;
+
+  @IsOptional()
+  @IsString()
+  replacementPolicy?: string;
+
+  @IsOptional()
+  @IsString()
+  feesNote?: string;
 }

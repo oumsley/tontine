@@ -56,7 +56,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           {product.eligibility.eligible ? (
             <>
               <Button
-                label="Souscrire"
+                label="Adhérer à cette tontine"
                 onPress={() => navigation.navigate("SubscriptionTerms", { productId: product.id })}
               />
               <Text style={styles.bottomNote}>Sans engagement · réponse immédiate</Text>
@@ -143,10 +143,42 @@ export function ProductDetailScreen({ navigation, route }: Props) {
       </View>
 
       <Card>
-        <Text style={typography.sectionTitle}>À propos de ce groupe</Text>
+        <Text style={typography.sectionTitle}>Pourquoi cette tontine</Text>
         <Text style={typography.bodySoft}>{product.description}</Text>
       </Card>
+
+      <Card>
+        <Text style={typography.sectionTitle}>Ce que je reçois</Text>
+        <Text style={styles.receiveAmount}>{formatAmount(product.expectedReceiveAmount)} FCFA</Text>
+        <Text style={typography.bodySoft}>{product.receptionTiming}</Text>
+      </Card>
+
+      <Card>
+        <Text style={typography.sectionTitle}>Conditions et règles</Text>
+        <RuleRow
+          label="Retard"
+          value={`Pénalité de ${penaltyRate}% après ${product.lateGracePeriodDays} jour(s) de retard.`}
+        />
+        <RuleRow
+          label="Sortie"
+          value={product.exitPolicy ?? "Un départ suit la procédure de sortie prévue par BingMoney pour ce groupe."}
+        />
+        <RuleRow
+          label="Remplacement"
+          value={product.replacementPolicy ?? "Un remplacement éventuel, si nécessaire, est géré par BingMoney."}
+        />
+        <RuleRow label="Frais" value={product.feesNote ?? "Aucun frais additionnel pour cette tontine."} />
+      </Card>
     </ScreenContainer>
+  );
+}
+
+function RuleRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ gap: 2 }}>
+      <Text style={typography.label}>{label}</Text>
+      <Text style={typography.bodySoft}>{value}</Text>
+    </View>
   );
 }
 
@@ -208,6 +240,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   infoValue: { fontSize: 15.5, fontWeight: "700", color: colors.ink },
+  receiveAmount: { fontSize: 24, fontWeight: "800", color: colors.accentDark, letterSpacing: -0.5 },
   bottomBar: { padding: spacing.xl, gap: spacing.sm },
   bottomNote: { textAlign: "center", fontSize: 12, color: colors.inkFaint, fontWeight: "500" },
   ineligibleBox: {

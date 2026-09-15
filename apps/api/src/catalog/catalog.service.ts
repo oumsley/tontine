@@ -94,6 +94,12 @@ export class CatalogService {
       latePenaltyRateBps: product.latePenaltyRateBps,
       joinableGroupId: alreadySubscribedGroup ? null : (joinableGroup?.id ?? null),
       eligibility: { eligible: reasons.length === 0, reasons },
+      expectedReceiveAmount: product.contributionAmount * product.totalSlots,
+      receptionTiming:
+        "Votre tour est attribué selon l'ordre d'adhésion. BingMoney déclenche votre décaissement dès que votre tour arrive, selon le calendrier de ce groupe.",
+      exitPolicy: product.exitPolicy,
+      replacementPolicy: product.replacementPolicy,
+      feesNote: product.feesNote,
     };
   }
 
