@@ -3,10 +3,11 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { KycStatus, type UserSummary } from "@bingmoney/shared";
+import { KycStatus, type TrustScoreDetail, type UserSummary } from "@bingmoney/shared";
 import { BottomNavBar, Card, ScreenContainer } from "@/components";
 import { colors, fontFamily, radii, spacing, typography } from "@/theme";
 import { authApi } from "@/api/auth";
+import { trustApi } from "@/api/trust";
 import { useSession } from "@/auth/SessionContext";
 import { MainStackParamList } from "@/navigation/MainNavigator";
 import { useMainNav } from "./useMainNav";
@@ -24,6 +25,7 @@ export function ProfileScreen({ navigation }: Props) {
   const onNavigate = useMainNav(navigation);
   const session = useSession();
   const [profile, setProfile] = useState<UserSummary | null>(null);
+  const [trust, setTrust] = useState<TrustScoreDetail | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -31,13 +33,14 @@ export function ProfileScreen({ navigation }: Props) {
       authApi.getProfile().then((res) => {
         if (!cancelled) setProfile(res);
       });
+      trustApi.getMine().then((res) => {
+        if (!cancelled) setTrust(res);
+      });
       return () => {
         cancelled = true;
       };
     }, []),
   );
-
-  const trustLevel = !profile ? "" : profile.trustScore >= 70 ? "Bon niveau" : profile.trustScore >= 40 ? "Niveau moyen" : "À renforcer";
 
   return (
     <ScreenContainer footer={<BottomNavBar active="profile" onNavigate={onNavigate} />}>
@@ -66,19 +69,46 @@ export function ProfileScreen({ navigation }: Props) {
       <View style={styles.trustCard}>
         <Text style={styles.trustLabel}>Trust Score</Text>
         <View style={styles.trustRow}>
-          <Text style={styles.trustNumber}>{profile?.trustScore ?? "—"}</Text>
+          <Text style={styles.trustNumber}>{trust?.total ?? profile?.trustScore ?? "—"}</Text>
           <Text style={styles.trustMax}>/ 100</Text>
         </View>
-        {profile ? (
+        {trust ? (
           <View style={styles.trustPill}>
-            <Text style={styles.trustPillLabel}>{trustLevel}</Text>
+            <Text style={styles.trustPillLabel}>{trust.levelLabel}</Text>
           </View>
         ) : null}
         <Text style={styles.trustNote}>
-          Le détail par dimension (paiements, historique, réputation, sécurité) arrivera avec le Trust
-          Score complet.
+          Un score comportemental basé sur votre activité sur BingMoney — ni une mesure de richesse, ni une
+          garantie de solvabilité.
         </Text>
       </View>
+
+      {trust ? (
+        <Card>
+          {trust.dimensions.map((dimension, index) => (
+            <View
+              key={dimension.key}
+              style={[styles.dimensionRow, index === trust.dimensions.length - 1 && styles.dimensionRowLast]}
+            >
+              <View style={styles.dimensionHeader}>
+                <Text style={typography.label}>{dimension.label}</Text>
+                <Text style={styles.dimensionScore}>
+                  {dimension.score}/{dimension.maxScore}
+                </Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${dimension.maxScore > 0 ? (dimension.score / dimension.maxScore) * 100 : 0}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.dimensionDescription}>{dimension.description}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       <Pressable onPress={() => void session.signOut()} style={styles.signOut}>
         <Text style={styles.signOutLabel}>Se déconnecter</Text>
@@ -124,6 +154,13 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.65)",
     textAlign: "center",
   },
+  dimensionRow: { gap: 6, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  dimensionRowLast: { borderBottomWidth: 0, paddingBottom: 0 },
+  dimensionHeader: { flexDirection: "row", justifyContent: "space-between" },
+  dimensionScore: { fontSize: 13, fontFamily: fontFamily.bold, color: colors.accentDark },
+  progressTrack: { height: 6, borderRadius: radii.full, backgroundColor: colors.border, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: radii.full, backgroundColor: colors.accent },
+  dimensionDescription: { fontSize: 12, fontFamily: fontFamily.medium, color: colors.inkSoft },
   signOut: { alignItems: "center", padding: spacing.md },
   signOutLabel: { fontSize: 14, fontFamily: fontFamily.semiBold, color: colors.danger },
 });

@@ -5,6 +5,7 @@ import { KycService } from "./kyc.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { KycStorageService } from "./storage/kyc-storage.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { TrustService } from "../trust/trust.service";
 
 describe("KycService", () => {
   let service: KycService;
@@ -14,6 +15,7 @@ describe("KycService", () => {
   };
   let storage: { saveDocument: jest.Mock };
   let notifications: { notify: jest.Mock };
+  let trust: { recompute: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -22,6 +24,7 @@ describe("KycService", () => {
     };
     storage = { saveDocument: jest.fn().mockResolvedValue("/uploads/kyc/user-1/file.jpg") };
     notifications = { notify: jest.fn().mockResolvedValue(true) };
+    trust = { recompute: jest.fn().mockResolvedValue({ total: 20 }) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -29,6 +32,7 @@ describe("KycService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: KycStorageService, useValue: storage },
         { provide: NotificationsService, useValue: notifications },
+        { provide: TrustService, useValue: trust },
       ],
     }).compile();
 
@@ -102,8 +106,9 @@ describe("KycService", () => {
       });
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: "user-1" },
-        data: { kycStatus: KycStatus.VERIFIED, trustScore: 60 },
+        data: { kycStatus: KycStatus.VERIFIED },
       });
+      expect(trust.recompute).toHaveBeenCalledWith("user-1");
       expect(result.status).toBe(KycStatus.VERIFIED);
       expect(notifications.notify).not.toHaveBeenCalled();
     });

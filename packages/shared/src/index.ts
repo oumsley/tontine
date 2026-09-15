@@ -4,3 +4,4 @@ export * from "./kyc";
 export * from "./wallet";
 export * from "./catalog";
 export * from "./notification";
+export * from "./trust";

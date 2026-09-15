@@ -16,6 +16,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { TrustService } from "../trust/trust.service";
 import { addIntervals } from "./frequency.util";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateGroupDto } from "./dto/create-group.dto";
@@ -38,6 +39,7 @@ export class CatalogService {
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly notificationsService: NotificationsService,
+    private readonly trustService: TrustService,
   ) {}
 
   async listProducts(filters: {
@@ -292,6 +294,7 @@ export class CatalogService {
       group.walletId,
     );
     const updated = await this.markContributionPaid(contribution.id, txn, penalty);
+    await this.trustService.recompute(userId);
 
     return {
       id: updated.id,

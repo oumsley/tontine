@@ -7,6 +7,7 @@ import { WalletModule } from "./wallet/wallet.module";
 import { MerchantsModule } from "./merchants/merchants.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { TrustModule } from "./trust/trust.module";
 import { AppController } from "./app.controller";
 
 @Module({
@@ -19,6 +20,7 @@ import { AppController } from "./app.controller";
     MerchantsModule,
     CatalogModule,
     NotificationsModule,
+    TrustModule,
   ],
   controllers: [AppController],
 })

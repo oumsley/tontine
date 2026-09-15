@@ -3,6 +3,7 @@ import { KycStatus, NotificationType, type KycStatusResponse } from "@bingmoney/
 import { PrismaService } from "../prisma/prisma.service";
 import { KycStorageService } from "./storage/kyc-storage.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { TrustService } from "../trust/trust.service";
 
 @Injectable()
 export class KycService {
@@ -10,6 +11,7 @@ export class KycService {
     private readonly prisma: PrismaService,
     private readonly storage: KycStorageService,
     private readonly notificationsService: NotificationsService,
+    private readonly trustService: TrustService,
   ) {}
 
   async submit(
@@ -87,11 +89,9 @@ export class KycService {
       where: { id: document.id },
       data: { status, reviewedAt, rejectionReason: rejectionReason ?? null },
     });
-    await this.prisma.user.update({
-      where: { id: userId },
-      // Placeholder trust score pending Module 4's full 5-dimension engine.
-      data: { kycStatus: status, trustScore: status === KycStatus.VERIFIED ? 60 : 0 },
-    });
+    await this.prisma.user.update({ where: { id: userId }, data: { kycStatus: status } });
+    // Recomputed after the status change so the Sécurité dimension reflects it.
+    await this.trustService.recompute(userId);
 
     if (status === KycStatus.REJECTED) {
       await this.notificationsService.notify({
